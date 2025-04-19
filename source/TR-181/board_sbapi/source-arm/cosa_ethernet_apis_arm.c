@@ -1023,8 +1023,38 @@ static int puma6_getSwitchDInfo(PCosaEthInterfaceInfo eth, PCOSA_DML_ETH_PORT_DI
 static int puma6_getSwitchStats(PCosaEthInterfaceInfo eth, PCOSA_DML_ETH_STATS pStats)
 {
 #if defined(ETH_STATS_ENABLED)
-    CCSP_HAL_ETHSW_PORT   port  = *((PCCSP_HAL_ETHSW_PORT)eth->hwid);
-    CcspHalEthSwGetEthPortStats(port, (PCCSP_HAL_ETH_STATS)pStats);
+    CCSP_HAL_ETHSW_PORT port = *((PCCSP_HAL_ETHSW_PORT)eth->hwid);
+    CCSP_HAL_ETH_STATS halstats;
+
+    /*
+       The ccsp-eth-agent version of COSA_DML_ETH_STATS and the HAL
+       CCSP_HAL_ETH_STATS structures are currently the same (BytesSent and
+       BytesReceived are 64bit, the rest are 32bit) but it's not safe to
+       assume that. Copy values rather than casting the PCOSA_DML_ETH_STATS
+       pointer to a PCCSP_HAL_ETH_STATS pointer and passing it to the HAL.
+    */
+    if (CcspHalEthSwGetEthPortStats(port, &halstats) == RETURN_OK)
+    {
+        pStats->BytesSent                   = halstats.BytesSent;
+        pStats->BytesReceived               = halstats.BytesReceived;
+        pStats->PacketsSent                 = halstats.PacketsSent;
+        pStats->PacketsReceived             = halstats.PacketsReceived;
+        pStats->ErrorsSent                  = halstats.ErrorsSent;
+        pStats->ErrorsReceived              = halstats.ErrorsReceived;
+        pStats->UnicastPacketsSent          = halstats.UnicastPacketsSent;
+        pStats->UnicastPacketsReceived      = halstats.UnicastPacketsReceived;
+        pStats->DiscardPacketsSent          = halstats.DiscardPacketsSent;
+        pStats->DiscardPacketsReceived      = halstats.DiscardPacketsReceived;
+        pStats->MulticastPacketsSent        = halstats.MulticastPacketsSent;
+        pStats->MulticastPacketsReceived    = halstats.MulticastPacketsReceived;
+        pStats->BroadcastPacketsSent        = halstats.BroadcastPacketsSent;
+        pStats->BroadcastPacketsReceived    = halstats.BroadcastPacketsReceived;
+        pStats->UnknownProtoPacketsReceived = halstats.UnknownProtoPacketsReceived;
+    }
+    else
+    {
+        memset(pStats, 0, sizeof(COSA_DML_ETH_STATS));
+    }
 #else
     UNREFERENCED_PARAMETER(eth);
     UNREFERENCED_PARAMETER(pStats);
