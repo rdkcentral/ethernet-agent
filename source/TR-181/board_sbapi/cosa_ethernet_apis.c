@@ -1861,8 +1861,33 @@ ANSC_STATUS CosaDmlIfaceFinalize(char *pValue, BOOL isAutoWanMode)
     }
 #else /*WAN_MANAGER_UNIFICATION_ENABLED*/
         //Always configure bridge in case of WAN_MANAGER_UNIFICATION_ENABLED. 
+#if defined(_RDKB_GLOBAL_PRODUCT_REQ_)
+    char OutputValue[120] = {0};
+
+    // configure bridge for all partner IDs
+    configureBridge = TRUE;
+
+    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue);
+    if(strncmp (OutputValue, "true", strlen("true")) == 0 )
+    {
+        // In case VlanDiscoverySupport enabled, using VlanManager to configure WAN interface
+        CcspTraceInfo(("VlanDiscoverySupport enabled,using VlanManager to configure WAN interface -Disabling configureBridge here\n"));
+        configureBridge = FALSE;
+    }
+
+    if(configureBridge == TRUE)
+    {
+        CcspTraceInfo(("%s Always configure bridge for wan interface\n",__FUNCTION__));
+    }
+    else
+    {
+        CcspTraceInfo(("%s Not configuring bridge on wan interface\n",__FUNCTION__));
+    }
+
+#else
         configureBridge = TRUE;
         CcspTraceInfo(("%s Always configure bridge \n",__FUNCTION__));
+#endif
 #endif
     CcspTraceInfo((" %s isAutoWanMode: %d lastknownmode: %d ethwanEnabled: %d ConfigureBridge: %d bridgemode: %d\n",
                 __FUNCTION__,
@@ -3370,11 +3395,34 @@ CosaDmlEthInit(
     pthread_create(&bootInformThreadId, NULL, &ThreadBootInformMsg, NULL);
 
 #endif //WAN_MANAGER_UNIFICATION_ENABLED
+#if defined(_RDKB_GLOBAL_PRODUCT_REQ_)
+    char OutputValue[120] = {0};
+    char wan_mac[18];
+
+    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue);
+    if(strncmp (OutputValue, "true", strlen("true")) != 0 )
+    {
+        // In case VlanDiscoverySupport enabled, using VlanManager to configure WAN interface
+        CcspTraceInfo(("VlanDiscoverySupport is disabled for Partner, so do EthWanBridgeInit\n"));
+        if (TRUE == isEthWanEnabled())
+        {
+            EthWanBridgeInit(pMyObject);
+        }
+    }
+    else
+    {
+        CcspTraceInfo(("VlanDiscoverySupport is enabled for Partner, so ignore EthWanBridgeInit\n"));
+        CcspTraceInfo(("VlanDiscoverySupport setting Ethernet Base Mac Address\n"));
+        memset(wan_mac,0,sizeof(wan_mac));
+        platform_hal_GetBaseMacAddress(wan_mac);
+        v_secure_system("sysevent set eth_wan_mac %s", wan_mac);
+    }
+#else
     if (TRUE == isEthWanEnabled())
     {
         EthWanBridgeInit(pMyObject);
     }
-
+#endif
     //Initialise ethsw-hal to get event notification from lower layer.
     if (CcspHalEthSwInit() != RETURN_OK)
     {
