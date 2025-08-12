@@ -1584,7 +1584,7 @@ INT WanBridgeConfigurationBcm(WAN_MODE_BRIDGECFG *pCfg)
                 v_secure_system("brctl addif %s %s", pCfg->wanPhyName,pCfg->ethwan_ifname);
                 #endif
             }
-            #if defined (_CBR2_PRODUCT_REQ_)
+            #if defined (_XB7_PRODUCT_REQ_) || defined (_XB8_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_)
                 // set 0 to /sys/class/net/cm0/netdev_group in ethwan mode
                 v_secure_system("ip link set dev %s group 0", ETHWAN_DOCSIS_INF_NAME);
             #endif 
@@ -1715,7 +1715,7 @@ INT WanBridgeConfigurationBcm(WAN_MODE_BRIDGECFG *pCfg)
                 v_secure_system("rm /tmp/wanmodechange");
 #endif
             }
-            #if defined (_CBR2_PRODUCT_REQ_)
+            #if defined (_XB7_PRODUCT_REQ_) || defined (_XB8_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_)
                 // set 2 to /sys/class/net/cm0/netdev_group in docsis mode
                 v_secure_system("ip link set dev %s group 2", ETHWAN_DOCSIS_INF_NAME);
             #endif 
@@ -3259,7 +3259,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
     #endif
 #endif
 
-#if defined (_CBR2_PRODUCT_REQ_)
+#if defined (_XB7_PRODUCT_REQ_) || defined (_XB8_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_)
     // set 0 to /sys/class/net/cm0/netdev_group in ethwan mode
     v_secure_system("ip link set dev %s group 0", ETHWAN_DOCSIS_INF_NAME);
 #endif 
