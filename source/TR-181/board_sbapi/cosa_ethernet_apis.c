@@ -225,7 +225,8 @@ static int sysctl_iface_set(const char *path, const char *ifname, const char *co
     int fd;
 
     if (ifname) {
-        snprintf(buf, sizeof(buf), path, ifname);
+        if (snprintf(buf, sizeof(buf), path, ifname) >= (int) sizeof(buf))
+            return -1;
         filename = buf;
     }
     else
