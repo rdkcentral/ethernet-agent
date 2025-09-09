@@ -3442,16 +3442,12 @@ CosaDmlEthInit(
 #else
     #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
 
-    char wanPhyName[20] = {0},out_value[20] = {0};
+    char wanPhyName[20] = {0};
 
-    if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
-    {
-       strcpy(wanPhyName, out_value);
-    }
-    else
-    {
-       return -1;
-    }
+    /* For reference platform, EthAgent will rename ETHWAN_DEF_INTF_NAME to erouter0 always at bootup.
+     * erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+     * RDKBACCL-896 */
+    strcpy(wanPhyName, "erouter0");
     #ifdef CORE_NET_LIB
     libnet_status status;
     status=interface_down(ETHWAN_DEF_INTF_NAME);
