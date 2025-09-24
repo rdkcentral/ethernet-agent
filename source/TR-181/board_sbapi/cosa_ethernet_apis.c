@@ -112,6 +112,7 @@
 #include "secure_wrapper.h"
 #include "ccsp_psm_helper.h"
 #include <platform_hal.h>
+#include <time.h>
 
 #if defined (FEATURE_RDKB_LED_MANAGER_LEGACY_WAN)
 #include <sysevent/sysevent.h>
@@ -207,6 +208,7 @@ extern  char g_Subsystem[BUFLEN_32];
 #include "cosa_apis.h"
 #include "plugin_main_apis.h"
 #include <sys/stat.h>
+#include <pthread.h>
 int sysevent_fd;
 token_t sysevent_token;
 #endif
@@ -216,6 +218,20 @@ token_t sysevent_token;
 #define WFO_ENABLED     "/etc/WFO_enabled"
 #define BUF_SIZE 100
 
+#if defined (WAN_FAILOVER_SUPPORTED)
+// Declaration of thread condition variable
+pthread_cond_t LinkdownCond=PTHREAD_COND_INITIALIZER;
+// declaring mutex
+pthread_mutex_t Linkdownlock=PTHREAD_MUTEX_INITIALIZER;
+pthread_condattr_t LinkdownAttr;
+static pthread_t WANSimptr;
+struct timespec ts;
+void* Wan_Failover_Simulation(void*);
+extern EthAgent_Link_Status ethAgent_Link_Status;
+#endif //WAN_FAILOVER_SUPPORTED
+
+int CreateFile(const char*);
+void set_time(uint32_t);
 
 static int sysctl_iface_set(const char *path, const char *ifname, const char *content)
 {
@@ -5714,4 +5730,161 @@ ANSC_STATUS CosaDmlEthPortSetPortCapability( PCOSA_DML_ETH_PORT_CONFIG pEthLink 
     return ANSC_STATUS_SUCCESS;
 }
 #endif //FEATURE_RDKB_AUTO_PORT_SWITCH
+
+/******************************************************************************************
+ @brief : This function check the respective file is exist or not, if exit remove that file
+ @param fname : File path and name
+ @return : -1, on Failure. 0, on Success.
+ *********************************************************************************************/
+int RemoveIfFileExists(const char *fname)
+{
+	int fd = open(fname, O_RDONLY);
+	if (fd < 0)
+	{
+		CcspTraceInfo(("%s: File does not exist or cannot be opened\n", __FUNCTION__));
+		return -1;
+	}
+	close(fd);
+	int ret = remove(fname);
+	if (ret == 0)
+	{
+		CcspTraceInfo(("%s: Removed file %s \n", __FUNCTION__, fname));
+		return 0;
+	}
+	else
+	{
+		CcspTraceInfo(("%s: Failed to remove file %s \n", __FUNCTION__, fname));
+		return -1;
+	}
+
+}
+/************************************************************************************
+ @brief : Create a file
+ @param fname : File name and path
+ @return : -1, on Failure. 0, on Success.
+ ***********************************************************************************/
+int CreateFile(const char* fname)
+{
+	FILE *LinkdownPtr;
+
+	LinkdownPtr = fopen(fname, "w");
+	if (LinkdownPtr == NULL)
+	{
+		CcspTraceInfo(("%s: %s file creates fail\n", __FUNCTION__, fname));
+		return -1;
+	}
+	fclose(LinkdownPtr);
+
+	return 0;
+}
+/*************************************************************************************************
+ @brief : set the timer value
+ @param TimeSec : Timer value in sec
+ *************************************************************************************************/
+void set_time(uint32_t TimeSec)
+{
+	memset(&ts,0,sizeof(ts));
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	ts.tv_nsec = 0;
+	ts.tv_sec +=TimeSec;
+}
+
+#ifdef WAN_FAILOVER_SUPPORTED
+/***********************************************************************************************
+ @brief : send signal to conditional pthread
+ ***********************************************************************************************/
+void CreateThreadandSendCondSignalToPthread()
+{
+	int result;
+
+	if (ethAgent_Link_Status.EWanLinkDown == true)
+	{
+		result = pthread_create(&WANSimptr, NULL, Wan_Failover_Simulation, NULL);
+		if (result != 0)
+		{
+			CcspTraceInfo(("%s WAN_Failover_Simulation pthread create fail \n", __FUNCTION__));
+			return;
+		}
+		else
+		{
+			CcspTraceInfo(("%s WAN_Failover_Simulation Pthread is created\n", __FUNCTION__));
+		}
+	}
+	else if (ethAgent_Link_Status.EWanLinkDown == false)
+	{
+		pthread_cond_signal(&LinkdownCond);
+		CcspTraceInfo(("%s pthread_cond_signal ethAgent_Link_Status.EWanLinkDown false\n", __FUNCTION__));
+	}
+}
+/***********************************************************************************
+ @brief : Assign function to function pointer
+ @param CreateThreadandSendCondSignalToPthreadfunc : Takes a pointer to a function
+ @return : TRUE, on Success. FALSE, on Failure.
+ ***********************************************************************************/
+BOOL SetEWanLinkDownSignalfunc(fpEWanLinkDownSignal CreateThreadandSendCondSignalToPthreadfunc)
+{
+	if (CreateThreadandSendCondSignalToPthreadfunc == NULL)
+	{
+		CcspTraceInfo(("%s Received NULL pointer, assigning pEWanLinkDownSignal to NULL\n", __FUNCTION__));
+		ethAgent_Link_Status.pEWanLinkDownSignal = NULL;
+		return FALSE;
+	}
+	ethAgent_Link_Status.pEWanLinkDownSignal = CreateThreadandSendCondSignalToPthreadfunc;
+
+	return TRUE;
+}
+
+/***********************************************************************************
+ @brief : Trigger WAN failover Simulation
+ ***********************************************************************************/
+void* Wan_Failover_Simulation(void *arg)
+{
+	pthread_detach(pthread_self());
+	CcspTraceInfo(("Entry %s \n", __FUNCTION__));
+	pthread_condattr_init(&LinkdownAttr);
+	pthread_condattr_setclock(&LinkdownAttr, CLOCK_MONOTONIC);
+	pthread_cond_init(&LinkdownCond, &LinkdownAttr);
+	pthread_mutex_lock(&Linkdownlock);
+	set_time(ethAgent_Link_Status.EWanLinkDownTimeout);
+	int rv;
+
+	if (ethAgent_Link_Status.EWanLinkDown == true)
+	{
+		EthWanLinkDown_callback(); // Link down
+		CreateFile(EWAN_LINK_DOWN_TEST_FILE);
+	}
+
+	if (ethAgent_Link_Status.EWanLinkDownTimeout == 0)
+	{
+		// conditional wait
+		pthread_cond_wait(&LinkdownCond, &Linkdownlock);
+	}
+	else
+	{
+		// Sleep based on TR181 Device.X_RDKCENTRAL-COM_EthernetWAN.LinkDownTimeout
+		rv = pthread_cond_timedwait(&LinkdownCond, &Linkdownlock, &ts);
+		if (rv == ETIMEDOUT) {
+			CcspTraceInfo(("%s pthread_cond_timedwait(): timeout occurred\n", __FUNCTION__));
+		}
+		else if (rv == 0)
+		{
+			CcspTraceInfo(("%s pthread_cond_timedwait(): condition was signaled\n", __FUNCTION__));
+		}
+		else
+		{
+			CcspTraceError(("%s pthread_cond_timedwait(): someother error observed, error:%d\n", __FUNCTION__, rv));
+		}
+		ethAgent_Link_Status.EWanLinkDown = false;
+	}
+	// Bring up EWan Link
+	EthWanLinkUp_callback();
+	// remove the file once the wan failover simulation is completed.
+	RemoveIfFileExists(EWAN_LINK_DOWN_TEST_FILE);
+	// release lock
+	pthread_mutex_unlock(&Linkdownlock);
+	CcspTraceInfo(("Exit %s \n", __FUNCTION__));
+
+	return arg;
+}
+#endif //WAN_FAILOVER_SUPPORTED
 #endif //FEATURE_RDKB_WAN_MANAGER
