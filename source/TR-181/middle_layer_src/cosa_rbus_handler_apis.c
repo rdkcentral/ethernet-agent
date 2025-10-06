@@ -22,7 +22,6 @@
 #include <stdint.h>
 #include "ccsp_trace.h"
 #include "cosa_rbus_handler_apis.h"
-//#include <sysevent/sysevent.h>
 #include "syscfg/syscfg.h"
 
 #if  defined  (WAN_FAILOVER_SUPPORTED) ||  defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined (_PLATFORM_RASPBERRYPI_) ||  defined(_PLATFORM_BANANAPI_R4_)
