@@ -112,7 +112,6 @@
 #include "secure_wrapper.h"
 #include "ccsp_psm_helper.h"
 #include <platform_hal.h>
-#include <time.h>
 
 #if defined (FEATURE_RDKB_LED_MANAGER_LEGACY_WAN)
 #include <sysevent/sysevent.h>
@@ -209,6 +208,7 @@ extern  char g_Subsystem[BUFLEN_32];
 #include "plugin_main_apis.h"
 #include <sys/stat.h>
 #include <pthread.h>
+#include <time.h>
 int sysevent_fd;
 token_t sysevent_token;
 #endif
@@ -5777,6 +5777,9 @@ int CreateFile(const char* fname)
 
 	return 0;
 }
+
+#ifdef WAN_FAILOVER_SUPPORTED
+
 /*************************************************************************************************
  @brief : set the timer value
  @param TimeSec : Timer value in sec
@@ -5789,7 +5792,6 @@ void set_time(uint32_t TimeSec)
 	ts.tv_sec +=TimeSec;
 }
 
-#ifdef WAN_FAILOVER_SUPPORTED
 /***********************************************************************************************
  @brief : send signal to conditional pthread
  ***********************************************************************************************/
