@@ -635,7 +635,7 @@ TEST_F(CcspEthagentTestFixture, PositiveCaseethGetPHYRate)
 {
         CCSP_HAL_ETHSW_PORT PortId = CCSP_HAL_ETHSW_EthPort1;
        CCSP_HAL_ETHSW_LINK_RATE LinkRate = CCSP_HAL_ETHSW_LINK_10Mbps;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -652,7 +652,7 @@ TEST_F(CcspEthagentTestFixture, PositiveCaseethGetPHYRate)
 
 
      LinkRate = CCSP_HAL_ETHSW_LINK_100Mbps;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -669,7 +669,7 @@ TEST_F(CcspEthagentTestFixture, PositiveCaseethGetPHYRate)
 
 
      LinkRate = CCSP_HAL_ETHSW_LINK_1Gbps;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -687,7 +687,7 @@ TEST_F(CcspEthagentTestFixture, PositiveCaseethGetPHYRate)
 #ifdef _2_5G_ETHERNET_SUPPORT_
 
     LinkRate = CCSP_HAL_ETHSW_LINK_2_5Gbps;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
     EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -703,7 +703,7 @@ TEST_F(CcspEthagentTestFixture, PositiveCaseethGetPHYRate)
     EXPECT_EQ(2500, ethGetPHYRate(PortId));
 
     LinkRate = CCSP_HAL_ETHSW_LINK_5Gbps;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
     EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -722,7 +722,7 @@ TEST_F(CcspEthagentTestFixture, PositiveCaseethGetPHYRate)
 
 
 LinkRate = CCSP_HAL_ETHSW_LINK_10Gbps;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -738,7 +738,7 @@ LinkRate = CCSP_HAL_ETHSW_LINK_10Gbps;
     EXPECT_EQ(10000, ethGetPHYRate(PortId));
 
  LinkRate = CCSP_HAL_ETHSW_LINK_Auto;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -758,7 +758,7 @@ TEST_F(CcspEthagentTestFixture, NegtiveCaseethGetPHYRate)
 {
         CCSP_HAL_ETHSW_PORT PortId = CCSP_HAL_ETHSW_EthPort1;
         CCSP_HAL_ETHSW_LINK_RATE LinkRate = CCSP_HAL_ETHSW_LINK_NULL;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
@@ -777,7 +777,7 @@ TEST_F(CcspEthagentTestFixture, FailedCaseethGetPHYRate)
 {
         CCSP_HAL_ETHSW_PORT PortId = CCSP_HAL_ETHSW_EthPort1;
         CCSP_HAL_ETHSW_LINK_RATE LinkRate = CCSP_HAL_ETHSW_LINK_NULL;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
      EXPECT_CALL(*g_ethSwHALMock,CcspHalEthSwGetPortStatus(PortId, _, _, _))
                 .Times(1)
                 .WillOnce(::testing::DoAll(
