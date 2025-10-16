@@ -2689,6 +2689,12 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
         v_secure_system("ifconfig %s up", ethwan_ifname);
         #endif
 
+        CcspTraceInfo(("%s %d Settting ethWan hal before MACsec start ...!! \n", __FUNCTION__, __LINE__));
+        if (EthwanEnableWithoutReboot(TRUE) != ANSC_STATUS_SUCCESS)
+        {
+            return ANSC_STATUS_FAILURE;
+        }
+        CcspTraceInfo(("%s %d ethWan hal done!! \n", __FUNCTION__, __LINE__));
 #if defined (_MACSEC_SUPPORT_)
         CcspTraceInfo(("%s - Starting MACsec on %d with %d second timeout\n",__FUNCTION__,ETHWAN_DEF_INTF_NUM,MACSEC_TIMEOUT_SEC));
         if ( RETURN_ERR == platform_hal_StartMACsec(ETHWAN_DEF_INTF_NUM, MACSEC_TIMEOUT_SEC)) {
@@ -2696,10 +2702,6 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
         }
 #endif
 
-        if (EthwanEnableWithoutReboot(TRUE) != ANSC_STATUS_SUCCESS)
-        {
-            return ANSC_STATUS_FAILURE;
-        }
         /* ETH WAN Interface must be retrieved a second time in case MACsec
            modified the interfaces. */
         memset(ethwan_ifname,0,sizeof(ethwan_ifname));
