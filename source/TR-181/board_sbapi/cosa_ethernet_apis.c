@@ -166,6 +166,8 @@ extern  char g_Subsystem[BUFLEN_32];
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 6
 #elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 5
+#elif defined (_XB9_PRODUCT_REQ_)
+#define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 3
 #else
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 4 
 #endif
@@ -3432,13 +3434,16 @@ CosaDmlEthInit(
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
-    if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
+    sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
+    if (out_value[0] != '\0')
     {
        strcpy(wanPhyName, out_value);
     }
     else
     {
-       return -1;
+       /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+        * RDKBACCL-896 */
+       strcpy(wanPhyName, "erouter0");
     }
     #ifdef CORE_NET_LIB
     libnet_status status;
