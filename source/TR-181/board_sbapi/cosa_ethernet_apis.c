@@ -166,6 +166,8 @@ extern  char g_Subsystem[BUFLEN_32];
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 6
 #elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 5
+#elif defined (_XB9_PRODUCT_REQ_)
+#define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 3
 #else
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 4 
 #endif
@@ -2665,11 +2667,7 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
                 macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
         if (pEthernet)
         {
-	    #ifdef _64BIT_ARCH_SUPPORT_
-		CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %lu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #else
-            	CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %d\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #endif
+		CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %zu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
             if (0 == strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac)))
             {
                 strncpy(pEthernet->EthWanCfg.ethWanIfMac, ethwanMac, sizeof(pEthernet->EthWanCfg.ethWanIfMac)-1);
@@ -2817,11 +2815,7 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
         #endif
         if (pEthernet)
         {
-	    #ifdef _64BIT_ARCH_SUPPORT_
-		CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %lu\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #else
-            	CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %d\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #endif
+		CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %zu\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
             #ifdef CORE_NET_LIB
             status=interface_set_mac(ethwan_ifname, pEthernet->EthWanCfg.ethWanIfMac);
             if (status != CNL_STATUS_SUCCESS) 
@@ -3134,11 +3128,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
             macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
     if (pEthernet)
     {
-	#ifdef _64BIT_ARCH_SUPPORT_
-	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %lu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	#else
-	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %d\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	#endif
+	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %zu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
         if (0 == strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac)))
         {
             strncpy(pEthernet->EthWanCfg.ethWanIfMac, ethwanMac, sizeof(pEthernet->EthWanCfg.ethWanIfMac)-1);
@@ -3460,13 +3450,16 @@ CosaDmlEthInit(
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
-    if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
+    sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
+    if (out_value[0] != '\0')
     {
        strcpy(wanPhyName, out_value);
     }
     else
     {
-       return -1;
+       /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+        * RDKBACCL-896 */
+       strcpy(wanPhyName, "erouter0");
     }
     #ifdef CORE_NET_LIB
     libnet_status status;
