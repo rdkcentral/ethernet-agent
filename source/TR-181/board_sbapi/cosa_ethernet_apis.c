@@ -164,8 +164,10 @@ extern  char g_Subsystem[BUFLEN_32];
 #if defined (FEATURE_RDKB_WAN_MANAGER)
 #if defined (_CBR2_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 6
-#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_)
+#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 5
+#elif defined (_XB9_PRODUCT_REQ_)
+#define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 3
 #else
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 4 
 #endif
@@ -176,7 +178,7 @@ extern  char g_Subsystem[BUFLEN_32];
 #define WANOE_IFACE_DOWN "Down"
 #if defined (_CBR2_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERFACES 6 
-#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_)
+#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERFACES 5
 #else
 #define TOTAL_NUMBER_OF_INTERFACES 4 
@@ -635,7 +637,7 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 #define ETHWAN_DEF_INTF_NAME "eth3"
 #elif defined (_CBR2_PRODUCT_REQ_)
 #define ETHWAN_DEF_INTF_NAME "eth5"
-#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_)
+#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define ETHWAN_DEF_INTF_NAME "eth4"
 #elif defined (INTEL_PUMA7)
 #define ETHWAN_DEF_INTF_NAME "nsgmii0"
@@ -941,14 +943,14 @@ int ethGetPHYRate
     CCSP_HAL_ETHSW_LINK_RATE LinkRate       = CCSP_HAL_ETHSW_LINK_NULL;
     CCSP_HAL_ETHSW_DUPLEX_MODE DuplexMode   = CCSP_HAL_ETHSW_DUPLEX_Auto;
     INT PHYRate                             = 0;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
     CCSP_HAL_ETHSW_LINK_STATUS  LinkStatus  = CCSP_HAL_ETHSW_LINK_Down;
 #endif
     /* For Broadcom platform device, CcspHalEthSwGetPortStatus returns the Linkrate based
      * on the CurrentBitRate and CcspHalEthSwGetPortCfg returns the Linkrate based on the
      * MaximumBitRate. Hence CcspHalEthSwGetPortStatus called for Broadcom platform devices.
      */
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)|| ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
     status = CcspHalEthSwGetPortStatus(PortId, &LinkRate, &DuplexMode, &LinkStatus);
     CcspTraceWarning(("CcspHalEthSwGetPortStatus link rate %d\n", LinkRate));
 #else
@@ -2649,11 +2651,7 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
                 macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
         if (pEthernet)
         {
-	    #ifdef _64BIT_ARCH_SUPPORT_
-		CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %lu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #else
-            	CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %d\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #endif
+		CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %zu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
             if (0 == strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac)))
             {
                 strncpy(pEthernet->EthWanCfg.ethWanIfMac, ethwanMac, sizeof(pEthernet->EthWanCfg.ethWanIfMac)-1);
@@ -2801,11 +2799,7 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
         #endif
         if (pEthernet)
         {
-	    #ifdef _64BIT_ARCH_SUPPORT_
-		CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %lu\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #else
-            	CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %d\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	    #endif
+		CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %zu\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
             #ifdef CORE_NET_LIB
             status=interface_set_mac(ethwan_ifname, pEthernet->EthWanCfg.ethWanIfMac);
             if (status != CNL_STATUS_SUCCESS) 
@@ -3118,11 +3112,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
             macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
     if (pEthernet)
     {
-	#ifdef _64BIT_ARCH_SUPPORT_
-	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %lu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	#else
-	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %d\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
-	#endif
+	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %zu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
         if (0 == strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac)))
         {
             strncpy(pEthernet->EthWanCfg.ethWanIfMac, ethwanMac, sizeof(pEthernet->EthWanCfg.ethWanIfMac)-1);
@@ -3130,7 +3120,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
     }
 
 
-#ifdef _SCER11BEL_PRODUCT_REQ_
+#if defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 	Get_CommandOutput("cat /tmp/factory_nvram.data | grep RG_WAN | awk '{print $NF}'",wan_mac);
 #else
     memset(&macAddr,0,sizeof(macaddr_t));
@@ -3176,7 +3166,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
     #else
     v_secure_system("ifconfig %s down; ip link set %s name %s", wanPhyName,wanPhyName,ETHWAN_DOCSIS_INF_NAME);
     #endif
-#elif !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_XER5_PRODUCT_REQ_)
+#elif !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_XER5_PRODUCT_REQ_) && !defined(_SCXF11BFL_PRODUCT_REQ_)
     #ifdef CORE_NET_LIB
     status=interface_down(wanPhyName);
     if (status != CNL_STATUS_SUCCESS) 
@@ -3302,7 +3292,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
     v_secure_system("ifconfig %s up",ethwan_ifname);
     #endif
 #endif
-#if defined (_CBR2_PRODUCT_REQ_) || defined (_SCER11BEL_PRODUCT_REQ_)
+#if defined (_CBR2_PRODUCT_REQ_) || defined (_SCER11BEL_PRODUCT_REQ_) || defined (_SCXF11BFL_PRODUCT_REQ_)
     #ifdef CORE_NET_LIB
     status=interface_up(ethwan_ifname);
     if(status != CNL_STATUS_SUCCESS) 
@@ -3444,13 +3434,16 @@ CosaDmlEthInit(
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
-    if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
+    sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
+    if (out_value[0] != '\0')
     {
        strcpy(wanPhyName, out_value);
     }
     else
     {
-       return -1;
+       /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+        * RDKBACCL-896 */
+       strcpy(wanPhyName, "erouter0");
     }
     #ifdef CORE_NET_LIB
     libnet_status status;
