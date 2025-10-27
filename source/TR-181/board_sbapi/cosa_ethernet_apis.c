@@ -230,10 +230,10 @@ static pthread_t WANSimptr;
 struct timespec ts;
 void* Wan_Failover_Simulation(void*);
 extern EthAgent_Link_Status ethAgent_Link_Status;
+void set_time(uint32_t);
 #endif //WAN_FAILOVER_SUPPORTED
 
 int CreateFile(const char*);
-void set_time(uint32_t);
 
 static int sysctl_iface_set(const char *path, const char *ifname, const char *content)
 {
@@ -5779,10 +5779,10 @@ int CreateFile(const char* fname)
  *************************************************************************************************/
 void set_time(uint32_t TimeSec)
 {
-	memset(&ts,0,sizeof(ts));
+	memset(&ts ,0, sizeof(ts));
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	ts.tv_nsec = 0;
-	ts.tv_sec +=TimeSec;
+	ts.tv_sec += TimeSec;
 }
 
 /***********************************************************************************************

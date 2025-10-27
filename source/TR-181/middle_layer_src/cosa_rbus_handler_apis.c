@@ -270,7 +270,7 @@ BOOL Rbus_EthAgent_SetParamBoolValue(void* hInsContext, char* pParamName, BOOL b
 		if (ethAgent_Link_Status.EWanLinkDown!=bValue)
 		{
 			ethAgent_Link_Status.EWanLinkDown = bValue;
-                        if (ethAgent_Link_Status.pEWanLinkDownSignal!=NULL)
+                        if (ethAgent_Link_Status.pEWanLinkDownSignal != NULL)
 			{
 				ethAgent_Link_Status.pEWanLinkDownSignal();
 			}
