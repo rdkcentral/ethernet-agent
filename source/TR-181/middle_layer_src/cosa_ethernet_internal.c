@@ -373,7 +373,9 @@ CosaEthernetInitialize
 #if defined (WAN_FAILOVER_SUPPORTED) || defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_)
 	ethAgentRbusInit();
 #endif
-
+#if defined (WAN_FAILOVER_SUPPORTED)
+	SetEWanLinkDownSignalfunc(CreateThreadandSendCondSignalToPthread); //assign function pointer
+#endif //WAN_FAILOVER_SUPPORTED
     //Register callbacks with ethsw-hal for link events, so hal can update initial link status if needed
     appCallBack obj;
     memset (&obj, 0, sizeof(appCallBack));
@@ -382,7 +384,16 @@ CosaEthernetInitialize
     GWP_RegisterEthWan_Callback ( &obj );
     //Initialise global data and initalise hal
     CosaDmlEthInit(NULL, (PANSC_HANDLE)pMyObject);
-
+#if defined (WAN_FAILOVER_SUPPORTED)
+    // The below case might occur, when box crashed/reboot before timeout or conditional signaled
+    // Check if EWan failover simulation test file is exist or not.
+    // if exist, remove that file and bring up the EWan Link.
+    if (RemoveIfFileExists(EWAN_LINK_DOWN_TEST_FILE) == 0)
+    {
+	    CcspTraceInfo(("%s: Removed EWan failover simulation test file and bring up EWan Link\n", __FUNCTION__));
+	    EthWanLinkUp_callback();
+    }
+#endif //WAN_FAILOVER_SUPPORTED
 #elif defined(FEATURE_RDKB_WAN_AGENT)
     CosaDmlEthInit(NULL, (PANSC_HANDLE)pMyObject);
     CcspHalEthSw_RegisterLinkEventCallback(CosaDmlEthPortLinkStatusCallback); //Register cb for link event.
