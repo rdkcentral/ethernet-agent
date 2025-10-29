@@ -283,7 +283,8 @@ int Get_CommandOutput(char Command[],char *OutputValue)
         copy_command_output(fp, buf, sizeof(buf));
     }
     pclose(fp);
-    strcpy(OutputValue,buf);
+    /* CID 337686 : Calling risky function (DC.STRING_BUFFER) fix */
+    strncpy(OutputValue, buf, sizeof(OutputValue) - 1);
     CcspTraceInfo(("ethwan_initialized:%s \n",OutputValue));
     return 0;
 }
@@ -378,7 +379,8 @@ static int removeSubStrWithSpace (char * str, char * sub)
         token = strtok(NULL, delimit);
     }
 
-    strcpy(str, tmp);
+     /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
+    strncpy(str, tmp, len - 1);
     free(tmp);
 
     // remove last char if its space
@@ -2347,7 +2349,13 @@ void* ThreadMonitorPhyAndNotify(void *arg)
             {
                  snprintf(acTmpPhyStatus, sizeof(acTmpPhyStatus), "%s", "Down");
             }
-            CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acSetParamName, acTmpPhyStatus, ccsp_string, TRUE);
+            /* CID 339366: Unchecked return value fix */
+            ANSC_STATUS ret = ANSC_STATUS_SUCCESS;
+            ret = CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acSetParamName, acTmpPhyStatus, ccsp_string, TRUE);
+            if( ret != ANSC_STATUS_SUCCESS)
+            {
+                CcspTraceError(("Failed to set the param %s with value %s\n",acSetParamName,acTmpPhyStatus));
+            }
             pEthWanCfg->MonitorPhyStatusAndNotify = FALSE;
         }
     }
@@ -4348,8 +4356,11 @@ INT CosaDmlEthPortLinkStatusCallback(CHAR *ifname, CHAR *state)
         pthread_mutex_lock(&gmEthGInfo_mutex);
         gpstEthGInfo[ifIndex].LinkStatus = link_status;
         snprintf(MSGQWanData.Name, sizeof(MSGQWanData.Name), "%s", gpstEthGInfo[ifIndex].Name);
-        pthread_mutex_unlock(&gmEthGInfo_mutex);
         MSGQWanData.LinkStatus = gpstEthGInfo[ifIndex].LinkStatus;
+      /*CID 340148: Data race condition (MISSING_LOCK)*/
+        /* CID 340445: Data race condition (MISSING_LOCK)*/
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
+
         //Send message to Queue
         CosaDmlEthPortSendLinkStatusToEventQueue(&MSGQWanData);
     }
@@ -4362,11 +4373,15 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
     INT iTotalInterfaces;
     INT iLoopCount;
 
+    /*CID 340191: Data race condition (MISSING_LOCK)*/
+    pthread_mutex_lock(&gmEthGInfo_mutex);
     if (NULL == ifname || IfIndex == NULL || gpstEthGInfo == NULL)
     {
         CcspTraceError(("Invalid Memory \n"));
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
+    pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     *IfIndex = -1;
     pthread_mutex_lock(&gmEthGInfo_mutex);
@@ -4425,21 +4440,29 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
     Totalinterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
     //Allocate memory for Eth Global Status Information
+    /* CID 340715: Data race condition (MISSING_LOCK)*/
+    pthread_mutex_lock(&gmEthGInfo_mutex);
     gpstEthGInfo = (PCOSA_DML_ETH_PORT_GLOBAL_CONFIG)AnscAllocateMemory(sizeof(COSA_DML_ETH_PORT_GLOBAL_CONFIG) * Totalinterfaces);
 
     //Return failure if allocation failiure
     if (NULL == gpstEthGInfo)
     {
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
+    pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     //Assign default value
     for (iLoopCount = 0; iLoopCount < Totalinterfaces; ++iLoopCount)
     {
+        /*CID 340188: Data race condition (MISSING_LOCK)*/
+        /*CID 339967: Data race condition (MISSING_LOCK)*/
+        pthread_mutex_lock(&gmEthGInfo_mutex);
         gpstEthGInfo[iLoopCount].Upstream = FALSE;
         gpstEthGInfo[iLoopCount].WanStatus = ETH_WAN_DOWN;
         gpstEthGInfo[iLoopCount].LinkStatus = ETH_LINK_STATUS_DOWN;
         gpstEthGInfo[iLoopCount].WanValidated = TRUE; //Make default as True.
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
 
         //Get names from psmdb
         char acPSMQuery[128] = {0};
@@ -4517,6 +4540,8 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
         }
 
         for (INT iEthLoopCount = 0; iEthLoopCount < iTotalEthEntries; iEthLoopCount++) {
+            /* CID 340283 : Data race condition (MISSING_LOCK)*/
+            pthread_mutex_lock(&gmEthGInfo_mutex);
             //Compare name
             if (0 == strcmp(acParamValue, gpstEthGInfo[iEthLoopCount].Name))
             {
@@ -4548,6 +4573,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                 }
                break;
             }
+            pthread_mutex_unlock(&gmEthGInfo_mutex);
         }
     }
 
@@ -4664,6 +4690,8 @@ static void *CosaDmlEthEventHandlerThread(void *arg)
             char acTmpPhyStatus[32] = {0};
             BOOL IsValidStatus = TRUE;
             memcpy(&MSGQWanData, EventMsg.Msg, sizeof(CosaETHMSGQWanData));
+            /* CID 340631: String not null terminated*/
+            MSGQWanData.Name[sizeof(MSGQWanData.Name) - 1] = '\0';  // Ensure null termination
             CcspTraceInfo(("%s %d - Event Msg Received\n", __FUNCTION__, __LINE__));
             CcspTraceInfo(("****** [%s,%d]\n", MSGQWanData.Name, MSGQWanData.LinkStatus));
 
@@ -4713,7 +4741,8 @@ static void *CosaDmlEthEventHandlerThread(void *arg)
     } while (1);
 
     //exit from thread
-    pthread_exit(NULL);
+    /*CID 559757: Structurally dead code (UNREACHABLE) fix*/
+  //  pthread_exit(NULL);
 }
 
 /* Get data from the other component. */
