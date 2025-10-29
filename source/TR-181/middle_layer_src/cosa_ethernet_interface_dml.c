@@ -416,7 +416,7 @@ Interface_GetParamStringValue
     {
         /* collect value */
         /* CID 178793 : Calling risky function (DC.STRING_BUFFER) fix */
-        strncpy(pValue, "", sizeof(pValue)-1);
+        pValue[0] = '\0';
         return 0;
     }
 

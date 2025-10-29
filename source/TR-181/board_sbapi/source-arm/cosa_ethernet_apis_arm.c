@@ -319,10 +319,11 @@ CosaDmlEthInterfaceInit
      *  It doesn't make sense to even have a MAC address in Ethernet Interface DM object,
      *  so we are not going to fill the MAC address for Upstream interfaces.
      */
-    /*CID 178473: Unchecked return value (CHECKED_RETURN)*/
-    if(-1 != _getMac("brlan0", strMac))
+
+    /*CID 178473: Unchecked return value (CHECKED_RETURN) fix*/
+    if(0 != _getMac("brlan0", strMac))
     {
-        CcspTraceInfo(("%s - successfully got brlan0 MAC address\n", __FUNCTION__));
+        CcspTraceError(("%s - failed to get brlan0 MAC address\n", __FUNCTION__));
     }
 
 #ifdef FEATURE_RDKB_WAN_UPSTREAM

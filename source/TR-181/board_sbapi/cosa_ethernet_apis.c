@@ -285,6 +285,7 @@ int Get_CommandOutput(char Command[],char *OutputValue)
     pclose(fp);
     /* CID 337686 : Calling risky function (DC.STRING_BUFFER) fix */
     strncpy(OutputValue, buf, sizeof(OutputValue) - 1);
+    OutputValue[sizeof(OutputValue)-1] = '\0';
     CcspTraceInfo(("ethwan_initialized:%s \n",OutputValue));
     return 0;
 }
@@ -304,7 +305,7 @@ void copy_command_output(FILE *fp, char * buf, int len)
 }
 bool isEthwan_initialized()
 {
-	char OutputValue[120];
+	char OutputValue[120] = {0};
 	Get_CommandOutput("sysevent get ethwan-initialized",OutputValue);
 	if(atoi(OutputValue)==1)
 	{
@@ -2350,9 +2351,7 @@ void* ThreadMonitorPhyAndNotify(void *arg)
                  snprintf(acTmpPhyStatus, sizeof(acTmpPhyStatus), "%s", "Down");
             }
             /* CID 339366: Unchecked return value fix */
-            ANSC_STATUS ret = ANSC_STATUS_SUCCESS;
-            ret = CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acSetParamName, acTmpPhyStatus, ccsp_string, TRUE);
-            if( ret != ANSC_STATUS_SUCCESS)
+            if(CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acSetParamName, acTmpPhyStatus, ccsp_string, TRUE) != ANSC_STATUS_SUCCESS)
             {
                 CcspTraceError(("Failed to set the param %s with value %s\n",acSetParamName,acTmpPhyStatus));
             }
@@ -4373,7 +4372,7 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
     INT iTotalInterfaces;
     INT iLoopCount;
 
-    /*CID 340191: Data race condition (MISSING_LOCK)*/
+    /*CID 340191: Data race condition (MISSING_LOCK) fix*/
     pthread_mutex_lock(&gmEthGInfo_mutex);
     if (NULL == ifname || IfIndex == NULL || gpstEthGInfo == NULL)
     {
@@ -4381,11 +4380,9 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
-    pthread_mutex_unlock(&gmEthGInfo_mutex);
+   // pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     *IfIndex = -1;
-    pthread_mutex_lock(&gmEthGInfo_mutex);
-
     iTotalInterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
     for (iLoopCount = 0; iLoopCount < iTotalInterfaces; iLoopCount++)
@@ -4444,25 +4441,20 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
     pthread_mutex_lock(&gmEthGInfo_mutex);
     gpstEthGInfo = (PCOSA_DML_ETH_PORT_GLOBAL_CONFIG)AnscAllocateMemory(sizeof(COSA_DML_ETH_PORT_GLOBAL_CONFIG) * Totalinterfaces);
 
-    //Return failure if allocation failiure
+    //Return failure if allocation failure
     if (NULL == gpstEthGInfo)
     {
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
-    pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     //Assign default value
     for (iLoopCount = 0; iLoopCount < Totalinterfaces; ++iLoopCount)
     {
-        /*CID 340188: Data race condition (MISSING_LOCK)*/
-        /*CID 339967: Data race condition (MISSING_LOCK)*/
-        pthread_mutex_lock(&gmEthGInfo_mutex);
         gpstEthGInfo[iLoopCount].Upstream = FALSE;
         gpstEthGInfo[iLoopCount].WanStatus = ETH_WAN_DOWN;
         gpstEthGInfo[iLoopCount].LinkStatus = ETH_LINK_STATUS_DOWN;
         gpstEthGInfo[iLoopCount].WanValidated = TRUE; //Make default as True.
-        pthread_mutex_unlock(&gmEthGInfo_mutex);
 
         //Get names from psmdb
         char acPSMQuery[128] = {0};
@@ -4492,6 +4484,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         gpstEthGInfo[iLoopCount].Enable = FALSE; //Make default as False.
         snprintf(gpstEthGInfo[iLoopCount].LowerLayers, sizeof(gpstEthGInfo[iLoopCount].LowerLayers), "%s%d", ETHERNET_IF_LOWERLAYERS, iLoopCount + 1);
 #endif //FEATURE_RDKB_WAN_MANAGER
+       pthread_mutex_unlock(&gmEthGInfo_mutex);
     }
 
     return ANSC_STATUS_SUCCESS;
