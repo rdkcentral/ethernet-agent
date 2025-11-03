@@ -4347,8 +4347,6 @@ INT CosaDmlEthPortLinkStatusCallback(CHAR *ifname, CHAR *state)
         link_status = ETH_LINK_STATUS_DOWN;
     }
 
-
-	error;
     INT ifIndex = -1;
     if (CosaDmlEthPortGetIndexFromIfName(ifname, &ifIndex) == ANSC_STATUS_SUCCESS)
     {
@@ -4382,10 +4380,10 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
-    pthread_mutex_unlock(&gmEthGInfo_mutex);
+   // pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     *IfIndex = -1;
-	pthread_mutex_lock(&gmEthGInfo_mutex);
+	//pthread_mutex_lock(&gmEthGInfo_mutex);
     iTotalInterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
     for (iLoopCount = 0; iLoopCount < iTotalInterfaces; iLoopCount++)
@@ -4440,7 +4438,9 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
     Totalinterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
     //Allocate memory for Eth Global Status Information
-    /* CID 340715: Data race condition (MISSING_LOCK)*/
+    /* CID 340715: Data race condition (MISSING_LOCK) fix */
+	/*CID 340188: Data race condition (MISSING_LOCK) fix */
+    /*CID 339967: Data race condition (MISSING_LOCK)fix */
     pthread_mutex_lock(&gmEthGInfo_mutex);
     gpstEthGInfo = (PCOSA_DML_ETH_PORT_GLOBAL_CONFIG)AnscAllocateMemory(sizeof(COSA_DML_ETH_PORT_GLOBAL_CONFIG) * Totalinterfaces);
 
@@ -4450,7 +4450,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
-	pthread_mutex_unlock(&gmEthGInfo_mutex);
+	//pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     //Assign default value
     for (iLoopCount = 0; iLoopCount < Totalinterfaces; ++iLoopCount)
@@ -4488,7 +4488,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         gpstEthGInfo[iLoopCount].Enable = FALSE; //Make default as False.
         snprintf(gpstEthGInfo[iLoopCount].LowerLayers, sizeof(gpstEthGInfo[iLoopCount].LowerLayers), "%s%d", ETHERNET_IF_LOWERLAYERS, iLoopCount + 1);
 #endif //FEATURE_RDKB_WAN_MANAGER
-     //  pthread_mutex_unlock(&gmEthGInfo_mutex);
+       pthread_mutex_unlock(&gmEthGInfo_mutex);
     }
 
     return ANSC_STATUS_SUCCESS;
@@ -4538,7 +4538,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
 
         for (INT iEthLoopCount = 0; iEthLoopCount < iTotalEthEntries; iEthLoopCount++) {
             /* CID 340283 : Data race condition (MISSING_LOCK)*/
-         //   pthread_mutex_lock(&gmEthGInfo_mutex);
+            pthread_mutex_lock(&gmEthGInfo_mutex);
             //Compare name
             if (0 == strcmp(acParamValue, gpstEthGInfo[iEthLoopCount].Name))
             {
@@ -4552,15 +4552,16 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                 if (CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acParamName, acParamValue, ccsp_string, TRUE) != ANSC_STATUS_SUCCESS)
                 {
                     CcspTraceError(("%s %d: Unable to set param name %s with value %s\n", __FUNCTION__, __LINE__, acParamName, acParamValue));
+					pthread_mutex_unlock(&gmEthGInfo_mutex);
                     return ANSC_STATUS_FAILURE;
                 }
 #endif
                //Check HAL configuration file
                 if(GetWan_InterfaceName(HalWanName, sizeof(HalWanName)) != ANSC_STATUS_SUCCESS) {
                     CcspTraceError(("%s %d Failed to get WANOE interface name from ETH HAL!\n", __FUNCTION__, __LINE__));
+					
                     break;
                 }
-
                 if (0 == strcmp(HalWanName, gpstEthGInfo[iEthLoopCount].Name))
                 {
                     //total match over ethagent/wanmanager dmsb and HAL configuration
@@ -4568,10 +4569,11 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                     strncpy(pInterface, gpstEthGInfo[iEthLoopCount].Name, length);
                     CcspTraceInfo(("%s %d - WANOE Name:%s\n", __FUNCTION__, __LINE__, pInterface));
                 }
+				pthread_mutex_unlock(&gmEthGInfo_mutex);
                break;
             }
-          //  pthread_mutex_unlock(&gmEthGInfo_mutex);
-        }
+			pthread_mutex_unlock(&gmEthGInfo_mutex);
+		}
     }
 
     return ANSC_STATUS_SUCCESS;
