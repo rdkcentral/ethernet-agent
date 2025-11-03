@@ -4347,6 +4347,8 @@ INT CosaDmlEthPortLinkStatusCallback(CHAR *ifname, CHAR *state)
         link_status = ETH_LINK_STATUS_DOWN;
     }
 
+
+	error;
     INT ifIndex = -1;
     if (CosaDmlEthPortGetIndexFromIfName(ifname, &ifIndex) == ANSC_STATUS_SUCCESS)
     {
