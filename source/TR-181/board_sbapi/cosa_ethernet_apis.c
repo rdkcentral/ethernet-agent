@@ -4380,9 +4380,10 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
-   // pthread_mutex_unlock(&gmEthGInfo_mutex);
+    pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     *IfIndex = -1;
+	pthread_mutex_lock(&gmEthGInfo_mutex);
     iTotalInterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
     for (iLoopCount = 0; iLoopCount < iTotalInterfaces; iLoopCount++)
@@ -4447,6 +4448,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
+	pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     //Assign default value
     for (iLoopCount = 0; iLoopCount < Totalinterfaces; ++iLoopCount)
@@ -4484,7 +4486,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         gpstEthGInfo[iLoopCount].Enable = FALSE; //Make default as False.
         snprintf(gpstEthGInfo[iLoopCount].LowerLayers, sizeof(gpstEthGInfo[iLoopCount].LowerLayers), "%s%d", ETHERNET_IF_LOWERLAYERS, iLoopCount + 1);
 #endif //FEATURE_RDKB_WAN_MANAGER
-       pthread_mutex_unlock(&gmEthGInfo_mutex);
+     //  pthread_mutex_unlock(&gmEthGInfo_mutex);
     }
 
     return ANSC_STATUS_SUCCESS;
@@ -4534,7 +4536,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
 
         for (INT iEthLoopCount = 0; iEthLoopCount < iTotalEthEntries; iEthLoopCount++) {
             /* CID 340283 : Data race condition (MISSING_LOCK)*/
-            pthread_mutex_lock(&gmEthGInfo_mutex);
+         //   pthread_mutex_lock(&gmEthGInfo_mutex);
             //Compare name
             if (0 == strcmp(acParamValue, gpstEthGInfo[iEthLoopCount].Name))
             {
@@ -4566,7 +4568,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                 }
                break;
             }
-            pthread_mutex_unlock(&gmEthGInfo_mutex);
+          //  pthread_mutex_unlock(&gmEthGInfo_mutex);
         }
     }
 
