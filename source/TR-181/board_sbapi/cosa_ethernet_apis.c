@@ -4559,7 +4559,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                //Check HAL configuration file
                 if(GetWan_InterfaceName(HalWanName, sizeof(HalWanName)) != ANSC_STATUS_SUCCESS) {
                     CcspTraceError(("%s %d Failed to get WANOE interface name from ETH HAL!\n", __FUNCTION__, __LINE__));
-					
+					pthread_mutex_unlock(&gmEthGInfo_mutex);
                     break;
                 }
                 if (0 == strcmp(HalWanName, gpstEthGInfo[iEthLoopCount].Name))
