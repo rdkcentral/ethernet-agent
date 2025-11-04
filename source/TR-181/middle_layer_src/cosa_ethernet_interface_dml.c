@@ -415,7 +415,8 @@ Interface_GetParamStringValue
     if (strcmp(ParamName, "LowerLayers") == 0)
     {
         /* collect value */
-        strcpy(pValue, "");
+        /* CID 178793 : Calling risky function (DC.STRING_BUFFER) fix */
+        pValue[0] = '\0';
         return 0;
     }
 
