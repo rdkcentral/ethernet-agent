@@ -4554,7 +4554,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
         }
 
         for (INT iEthLoopCount = 0; iEthLoopCount < iTotalEthEntries; iEthLoopCount++) {
-			CcspTraceInfo("%s - entered into for loop \n", __FUNCTION__));
+			CcspTraceInfo(("%s - entered into for loop \n", __FUNCTION__));
             /* CID 340283 : Data race condition (MISSING_LOCK)*/
             pthread_mutex_lock(&gmEthGInfo_mutex);
             //Compare name
