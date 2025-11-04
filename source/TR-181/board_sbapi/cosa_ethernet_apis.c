@@ -3643,6 +3643,7 @@ ANSC_STATUS
 CosaDmlEthPortInit(
     PANSC_HANDLE phContext)
 {
+	CcspTraceInfo(("%s - Function entered \n", __FUNCTION__));
 #if defined (FEATURE_RDKB_WAN_AGENT)
     PCOSA_DATAMODEL_ETHERNET pMyObject = (PCOSA_DATAMODEL_ETHERNET)phContext;
     PCOSA_DML_ETH_PORT_CONFIG pETHlinkTemp = NULL;
@@ -3650,6 +3651,7 @@ CosaDmlEthPortInit(
     INT iLoopCount = 0;
 
     iTotalInterfaces = CosaDmlEthGetTotalNoOfInterfaces();
+	CcspTraceInfo(("%s - Interfaces in total = %d \n", __FUNCTION__));
     pETHlinkTemp = (PCOSA_DML_ETH_PORT_CONFIG)AnscAllocateMemory(sizeof(COSA_DML_ETH_PORT_CONFIG) * iTotalInterfaces);
 
     if (NULL == pETHlinkTemp)
@@ -3682,6 +3684,7 @@ CosaDmlEthPortInit(
     //Assign the memory address to oringinal structure
     pMyObject->pEthLink = pETHlinkTemp;
     //Prepare global information.
+	CcspTraceInfo(("%s - Eth Port Prepare global info func called \n", __FUNCTION__));
     CosDmlEthPortPrepareGlobalInfo();
 #elif defined (FEATURE_RDKB_WAN_MANAGER)
     PCOSA_DATAMODEL_ETHERNET pMyObject = (PCOSA_DATAMODEL_ETHERNET)phContext;
@@ -4438,10 +4441,12 @@ ANSC_STATUS CosaDmlEthPortGetCopyOfGlobalInfoForGivenIfName(char *ifname, PCOSA_
 /* *CosaDmlEthLinePrepareGlobalInfo() */
 static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
 {
+	CcspTraceInfo(("%s - Function entered \n", __FUNCTION__));
     INT iLoopCount = 0;
     INT Totalinterfaces = 0;
 
     Totalinterfaces = CosaDmlEthGetTotalNoOfInterfaces();
+	CcspTraceInfo(("%s - Total interfaces = %d \n", __FUNCTION__, Totalinterfaces));
 
     //Allocate memory for Eth Global Status Information
     /* CID 340715: Data race condition (MISSING_LOCK) fix */
@@ -4507,6 +4512,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
 
 static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned int length)
 {
+	CcspTraceInfo(("%s - Funct entered \n", __FUNCTION__));
     INT iTotalEthEntries, iTotalWanEntries;
     char acParamName[256] = {0};
     char acParamValue[256] = {0};
@@ -4528,7 +4534,8 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
 
     //Get Total ETH entries count
     iTotalEthEntries = CosaDmlEthGetTotalNoOfInterfaces();
-
+    CcspTraceInfo(("%s - iTotalEthEntries  = %d\n", __FUNCTION__, iTotalEthEntries));
+	
     if (0 >= iTotalEthEntries) {
         return ANSC_STATUS_FAILURE;
     }
@@ -4547,6 +4554,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
         }
 
         for (INT iEthLoopCount = 0; iEthLoopCount < iTotalEthEntries; iEthLoopCount++) {
+			CcspTraceInfo("%s - entered into for loop \n", __FUNCTION__));
             /* CID 340283 : Data race condition (MISSING_LOCK)*/
             pthread_mutex_lock(&gmEthGInfo_mutex);
             //Compare name
