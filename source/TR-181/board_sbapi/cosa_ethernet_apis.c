@@ -4360,6 +4360,7 @@ INT CosaDmlEthPortLinkStatusCallback(CHAR *ifname, CHAR *state)
         /* CID 340445: Data race condition (MISSING_LOCK)*/
         pthread_mutex_unlock(&gmEthGInfo_mutex);
 
+		CcspTraceInfo(("%s - working fine with lock \n", __FUNCTION__));
         //Send message to Queue
         CosaDmlEthPortSendLinkStatusToEventQueue(&MSGQWanData);
     }
@@ -4372,6 +4373,7 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
     INT iTotalInterfaces;
     INT iLoopCount;
 
+	CcspTraceInfo(("%s - Entered \n", __FUNCTION__));
     /*CID 340191: Data race condition (MISSING_LOCK) fix*/
     pthread_mutex_lock(&gmEthGInfo_mutex);
     if (NULL == ifname || IfIndex == NULL || gpstEthGInfo == NULL)
@@ -4386,18 +4388,22 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
 	//pthread_mutex_lock(&gmEthGInfo_mutex);
     iTotalInterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
+	CcspTraceInfo(("%s - Total Interfaces = %d\n", __FUNCTION__, iTotalInterfaces));
     for (iLoopCount = 0; iLoopCount < iTotalInterfaces; iLoopCount++)
     {
         if ((NULL != &gpstEthGInfo[iLoopCount]) && (0 == strcmp(gpstEthGInfo[iLoopCount].Name, ifname)))
         {
+			CcspTraceInfo(("%s - Comparison success \n", __FUNCTION__));
             *IfIndex = iLoopCount;
             pthread_mutex_unlock(&gmEthGInfo_mutex);
             return ANSC_STATUS_SUCCESS;
         }
     }
 
+	CcspTraceInfo(("%s - Near to end of function \n", __FUNCTION__));
     pthread_mutex_unlock(&gmEthGInfo_mutex);
 
+	CcspTraceInfo(("%s - Function ends \n", __FUNCTION__));
     return ANSC_STATUS_FAILURE;
 }
 
@@ -4450,6 +4456,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
+	CcspTraceInfo(("%s - Memory allocation success \n", __FUNCTION__));
 	//pthread_mutex_unlock(&gmEthGInfo_mutex);
 
     //Assign default value
@@ -4460,6 +4467,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         gpstEthGInfo[iLoopCount].LinkStatus = ETH_LINK_STATUS_DOWN;
         gpstEthGInfo[iLoopCount].WanValidated = TRUE; //Make default as True.
 
+		CcspTraceInfo(("%s - Values updated \n", __FUNCTION__));
         //Get names from psmdb
         char acPSMQuery[128] = {0};
         char acPSMValue[64]  = {0};
@@ -4468,6 +4476,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
         {
             snprintf(gpstEthGInfo[iLoopCount].Name, sizeof(gpstEthGInfo[iLoopCount].Name), acPSMValue);
+			CcspTraceInfo(("%s - Get PSM record success \n", __FUNCTION__));
         } else
         {
             CcspTraceError(("Failed to dynamically get %s. using hardcoded fallback option\n", acPSMQuery));
@@ -4489,6 +4498,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
         snprintf(gpstEthGInfo[iLoopCount].LowerLayers, sizeof(gpstEthGInfo[iLoopCount].LowerLayers), "%s%d", ETHERNET_IF_LOWERLAYERS, iLoopCount + 1);
 #endif //FEATURE_RDKB_WAN_MANAGER
        pthread_mutex_unlock(&gmEthGInfo_mutex);
+		CcspTraceInfo(("%s - Lock released properly \n", __FUNCTION__));
     }
 
     return ANSC_STATUS_SUCCESS;
@@ -4549,6 +4559,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                snprintf(acParamName, sizeof(acParamName), WAN_PHY_PATH_PARAM_NAME, iWanLoopCount + 1);
                snprintf(acParamValue, sizeof(acParamValue), ETH_IF_PHY_PATH, iEthLoopCount + 1);
 
+				CcspTraceInfo(("%s - Value updated \n", __FUNCTION__));
                 if (CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acParamName, acParamValue, ccsp_string, TRUE) != ANSC_STATUS_SUCCESS)
                 {
                     CcspTraceError(("%s %d: Unable to set param name %s with value %s\n", __FUNCTION__, __LINE__, acParamName, acParamValue));
@@ -4566,13 +4577,16 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                 {
                     //total match over ethagent/wanmanager dmsb and HAL configuration
                     //WANOE name found!
+					CcspTraceInfo(("%s - Match was success \n", __FUNCTION__));
                     strncpy(pInterface, gpstEthGInfo[iEthLoopCount].Name, length);
                     CcspTraceInfo(("%s %d - WANOE Name:%s\n", __FUNCTION__, __LINE__, pInterface));
                 }
 				pthread_mutex_unlock(&gmEthGInfo_mutex);
+				CcspTraceInfo(("%s - Cycle over \n", __FUNCTION__));
                break;
             }
 			pthread_mutex_unlock(&gmEthGInfo_mutex);
+			CcspTraceInfo(("%s - Near the end \n", __FUNCTION__));
 		}
     }
 
