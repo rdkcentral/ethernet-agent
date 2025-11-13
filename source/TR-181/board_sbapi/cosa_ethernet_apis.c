@@ -164,6 +164,8 @@ extern  char g_Subsystem[BUFLEN_32];
 #if defined (FEATURE_RDKB_WAN_MANAGER)
 #if defined (_CBR2_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 6
+#elif defined (_PLATFORM_GENERICARM_)
+#define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 10
 #elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 5
 #elif defined (_XB9_PRODUCT_REQ_)
@@ -645,8 +647,6 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 /**************************************************************************
                         GLOBAL VARIABLES
 **************************************************************************/
-
-/* ETH WAN Fallback Interface Name - Should eventually move away from Compile Time */
 #if defined (_XB10_PRODUCT_REQ_)
 #define ETHWAN_DEF_INTF_NAME "eth1"
 #elif defined (_XB7_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_)
@@ -661,6 +661,8 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 #define ETHWAN_DEF_INTF_NAME "eth2"
 #elif defined (_PLATFORM_BANANAPI_R4_)
 #define ETHWAN_DEF_INTF_NAME "lan0"
+#elif defined (_PLATFORM_GENERICARM_)
+#define ETHWAN_DEF_INTF_NAME "eth3"
 #else
 #define ETHWAN_DEF_INTF_NAME "eth0"
 #endif
@@ -3448,9 +3450,8 @@ CosaDmlEthInit(
         }
     }
 #else
-    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
-
-    char wanPhyName[20] = {0},out_value[20] = {0};
+    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_PLATFORM_GENERICARM_)
+    char wanPhyName[20] = {0},out_value[20] = {0},wan_interface_name[20] ={0};
 
     sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
     if (out_value[0] != '\0')
@@ -3481,8 +3482,16 @@ CosaDmlEthInit(
         CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
     }
     #else
-    v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
-    v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
+    if (GWP_GetEthWanInterfaceName((unsigned char*)wan_interface_name, sizeof(wan_interface_name)) != RETURN_OK) {
+    CcspTraceError(("Failed to get WAN interface name via GWP_GetEthWanInterfaceName\n"));
+    return -1;
+    }
+
+    CcspTraceError(("Detected WAN interface = %s, target PHY = %s\n",
+                wan_interface_name, wanPhyName));
+
+    v_secure_system("ifconfig %s down",wan_interface_name);
+    v_secure_system("ip link set %s name %s",wan_interface_name,wanPhyName);
     v_secure_system("ifconfig %s up",wanPhyName);
     #endif
     #endif

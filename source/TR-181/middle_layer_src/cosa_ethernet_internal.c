@@ -82,11 +82,9 @@
 #include "cosa_ethernet_manager.h"
 #endif
 #endif //#if defined (FEATURE_RDKB_WAN_MANAGER)
-
-#if defined (WAN_FAILOVER_SUPPORTED)  ||  defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_)
+#if defined (WAN_FAILOVER_SUPPORTED)  ||  defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_PLATFORM_GENERICARM_)
 #include "cosa_rbus_handler_apis.h"
 #endif
-
 extern void * g_pDslhDmlAgent;
 extern ANSC_HANDLE g_EthObject;
 
@@ -369,8 +367,7 @@ CosaEthernetInitialize
     CosaDmlEthWanGetCfg(&pMyObject->EthWanCfg);
 
 #if defined(FEATURE_RDKB_WAN_MANAGER)
-
-#if defined (WAN_FAILOVER_SUPPORTED) || defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_)
+#if defined (WAN_FAILOVER_SUPPORTED) || defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_PLATFORM_GENERICARM_)
 	ethAgentRbusInit();
 #endif
 #if defined (WAN_FAILOVER_SUPPORTED)
