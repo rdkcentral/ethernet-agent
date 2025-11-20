@@ -137,7 +137,7 @@ static COSA_DML_ETH_PORT_SINFO g_EthIntSInfoStatic[] =
 #if defined(ETH_4_PORTS) || defined(ETH_5_PORTS) || defined(ETH_6_PORTS) || defined(ETH_8_PORTS)
     {SWITCH_PORT_3_NAME,                FALSE,  {0,0,0,0,0,0}},
 #if defined(ETH_5_PORTS) || defined(ETH_6_PORTS) || defined(ETH_8_PORTS)
-#if defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
+#if defined(_SCER11BEL_PRODUCT_REQ_)
     {SWITCH_PORT_4_NAME,                TRUE,   {0,0,0,0,0,0}},
 #else
     {SWITCH_PORT_4_NAME,                FALSE,  {0,0,0,0,0,0}},
