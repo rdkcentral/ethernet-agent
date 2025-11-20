@@ -19,39 +19,25 @@
 
 #ifndef  RBUS_HANDLER_APIS_H
 #define  RBUS_HANDLER_APIS_H
-#define UNREFERENCED_PARAMETER(_p_) (void)(_p_)
-int RemoveIfFileExists(const char*);
 
 #if defined (WAN_FAILOVER_SUPPORTED) ||  defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined (_PLATFORM_RASPBERRYPI_) ||  defined(_PLATFORM_BANANAPI_R4_)
 #include <stdbool.h>
 #include <rbus/rbus.h>
 
-//#define NUM_OF_RBUS_PARAMS	1
+#define NUM_OF_RBUS_PARAMS	1
 #define RBUS_COMPONENT_NAME	"RbusEthAgent"
 
 #if defined (WAN_FAILOVER_SUPPORTED)
 #define ETHWAN_LINK_STATUS_TR181	"Device.X_RDKCENTRAL-COM_EthernetWAN.LinkStatus"
-#define ETHWAN_LINK_DOWN_TR181		"Device.X_RDKCENTRAL-COM_EthernetWAN.LinkDown"
-#define ETHWAN_LINK_DOWN_TIMEOUT_TR181	"Device.X_RDKCENTRAL-COM_EthernetWAN.LinkDownTimeout"
-#define ETHWAN_LINK_DOWN_TIMEOUT	"EWanLinkDownTimeout"
-#define EWAN_LINK_DOWN_TEST_FILE	"/tmp/.EWanLinkDown_TestRunning.txt"
-
-typedef void (*fpEWanLinkDownSignal)();
 
 typedef struct 
 _EthAgent_Link_Status_
 {
     bool EWanLinkStatus;
-    bool EWanLinkDown;
-    uint EWanLinkDownTimeout;
-    fpEWanLinkDownSignal pEWanLinkDownSignal;
 	
 } EthAgent_Link_Status;
 
 rbusError_t getBoolHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts);
-rbusError_t setBoolHandler(rbusHandle_t handle, rbusProperty_t property, rbusSetHandlerOptions_t* opts);
-rbusError_t getuintHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts);
-rbusError_t setuintHandler(rbusHandle_t handle, rbusProperty_t property, rbusSetHandlerOptions_t* opts);
 
 rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char* eventName, rbusFilter_t filter, int32_t interval, bool* autoPublish);
 
@@ -60,9 +46,6 @@ void initLinkStatus();
 rbusError_t sendBoolUpdateEvent(char* event_name , bool eventNewData, bool eventOldData);
 
 void publishEWanLinkStatus(bool link_status);
-char const* GetParamName(char const* path);
-BOOL SetEWanLinkDownSignalfunc(fpEWanLinkDownSignal CreateThreadandSendCondSignalToPthreadfunc);
-void CreateThreadandSendCondSignalToPthread();
 
 #endif //WAN_FAILOVER_SUPPORTED
 rbusError_t ethAgentRbusInit();
