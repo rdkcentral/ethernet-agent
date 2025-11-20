@@ -2651,7 +2651,11 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
                 macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
         if (pEthernet)
         {
-		CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %zu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	    #ifdef _64BIT_ARCH_SUPPORT_
+		CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %lu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	    #else
+            	CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %d\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	    #endif
             if (0 == strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac)))
             {
                 strncpy(pEthernet->EthWanCfg.ethWanIfMac, ethwanMac, sizeof(pEthernet->EthWanCfg.ethWanIfMac)-1);
@@ -2801,7 +2805,11 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
         #endif
         if (pEthernet)
         {
-		CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %zu\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	    #ifdef _64BIT_ARCH_SUPPORT_
+		CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %lu\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	    #else
+            	CcspTraceInfo(("cosaethwanMac %s cosaEthwanIfmac length %d\n",pEthernet->EthWanCfg.ethWanIfMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	    #endif
             #ifdef CORE_NET_LIB
             status=interface_set_mac(ethwan_ifname, pEthernet->EthWanCfg.ethWanIfMac);
             if (status != CNL_STATUS_SUCCESS) 
@@ -3114,7 +3122,11 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
             macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
     if (pEthernet)
     {
-	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %zu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	#ifdef _64BIT_ARCH_SUPPORT_
+	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %lu\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	#else
+	    CcspTraceInfo(("Ethwan interface macaddress %s cosaEthwanIfmac length %d\n",ethwanMac,strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac))));
+	#endif
         if (0 == strnlen(pEthernet->EthWanCfg.ethWanIfMac,sizeof(pEthernet->EthWanCfg.ethWanIfMac)))
         {
             strncpy(pEthernet->EthWanCfg.ethWanIfMac, ethwanMac, sizeof(pEthernet->EthWanCfg.ethWanIfMac)-1);
