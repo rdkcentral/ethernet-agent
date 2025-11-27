@@ -284,8 +284,8 @@ int Get_CommandOutput(char Command[],char *OutputValue)
     }
     pclose(fp);
     /* CID 337686 : Calling risky function (DC.STRING_BUFFER) fix */
-    strncpy(OutputValue, buf, sizeof(OutputValue) - 1);
-    OutputValue[sizeof(OutputValue)-1] = '\0';
+    strncpy(OutputValue, buf, strlen(buf)+1);
+    OutputValue[strlen(buf)+1] = '\0';
     CcspTraceInfo(("ethwan_initialized:%s \n",OutputValue));
     return 0;
 }
@@ -382,6 +382,7 @@ static int removeSubStrWithSpace (char * str, char * sub)
 
     /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
     strncpy(str, tmp, len - 1);
+	str[len - 1] = '\0'; // Ensure null termination
     free(tmp);
 
     // remove last char if its space
@@ -4437,14 +4438,14 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
 
     Totalinterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
-    /* CID 340715: Data race condition (MISSING_LOCK) fix */
+	/* CID 340715: Data race condition (MISSING_LOCK) fix */
 	/*CID 340188: Data race condition (MISSING_LOCK) fix */
     /*CID 339967: Data race condition (MISSING_LOCK)fix */
     pthread_mutex_lock(&gmEthGInfo_mutex);
     //Allocate memory for Eth Global Status Information
     gpstEthGInfo = (PCOSA_DML_ETH_PORT_GLOBAL_CONFIG)AnscAllocateMemory(sizeof(COSA_DML_ETH_PORT_GLOBAL_CONFIG) * Totalinterfaces);
 
-    //Return failure if allocation failiure
+    //Return failure if allocation failure
     if (NULL == gpstEthGInfo)
     {
         pthread_mutex_unlock(&gmEthGInfo_mutex);
