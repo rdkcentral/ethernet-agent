@@ -661,6 +661,8 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 #define ETHWAN_DEF_INTF_NAME "eth2"
 #elif defined (_PLATFORM_BANANAPI_R4_)
 #define ETHWAN_DEF_INTF_NAME "lan0"
+#elif defined (_PLATFORM_GENERICARM_)
+#define ETHWAN_DEF_INTF_NAME "eth3"
 #else
 #define ETHWAN_DEF_INTF_NAME "eth0"
 #endif
@@ -3331,6 +3333,9 @@ CosaDmlEthInit(
     ANSC_HANDLE hDml,
     PANSC_HANDLE phContext)
 {
+    #if defined (_PLATFORM_GENERICARM_)
+	GetEthWanIfName_ARM();
+    #endif
     UNREFERENCED_PARAMETER(hDml);
 #if defined (FEATURE_RDKB_WAN_AGENT) || defined (FEATURE_RDKB_WAN_MANAGER)
     char PhyStatus[16] = {0};
@@ -3448,9 +3453,9 @@ CosaDmlEthInit(
         }
     }
 #else
-    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
+    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_PLATFORM_GENERICARM_)
 
-    char wanPhyName[20] = {0},out_value[20] = {0};
+    char wanPhyName[20] = {0},out_value[20] = {0},wan_interface_name[20] ={0};
 
     sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
     if (out_value[0] != '\0')
@@ -3465,6 +3470,27 @@ CosaDmlEthInit(
     }
     #ifdef CORE_NET_LIB
     libnet_status status;
+    #if defined (_PLATFORM_GENERICARM_)
+    if (GWP_GetEthWanInterfaceName((unsigned char*)wan_interface_name, sizeof(wan_interface_name)) != RETURN_OK) {
+    CcspTraceError(("Failed to get WAN interface name via GWP_GetEthWanInterfaceName\n"));
+    return -1;
+    }
+    status=interface_down(wan_interface_name);
+    if(status != CNL_STATUS_SUCCESS)
+    {
+        CcspTraceInfo(("Failed to down the interface %s\n",wan_interface_name));
+    }
+    status=interface_rename(wan_interface_name,wanPhyName);
+    if(status != CNL_STATUS_SUCCESS)
+    {
+        CcspTraceInfo(("Failed to rename the interface %s with %s\n",wan_interface_name,wanPhyName));
+    }
+    status=interface_up(wanPhyName);
+    if(status != CNL_STATUS_SUCCESS)
+    {
+        CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
+    }
+    #else
     status=interface_down(ETHWAN_DEF_INTF_NAME);
     if(status != CNL_STATUS_SUCCESS) 
     {
@@ -3480,6 +3506,7 @@ CosaDmlEthInit(
     {
         CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
     }
+    #endif
     #else
     v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
     v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
@@ -3553,6 +3580,57 @@ CosaDmlEthInit(
 #endif //#if defined (FEATURE_RDKB_WAN_AGENT) || FEATURE_RDKB_WAN_MANAGER
     return ANSC_STATUS_SUCCESS;
 }
+#if defined (_PLATFORM_GENERICARM_)
+void GetEthWanIfName_ARM(void)
+{
+    FILE *fp = NULL;
+    FILE *nvram_fp = NULL;
+    char temp_ifname[32] = {0};
+    const char *nvram_file = "/nvram/wan_ifname";
+
+    CcspTraceInfo(("%s called\n", __func__));
+
+    /* Run psmcli command */
+    fp = popen("psmcli get dmsb.wanmanager.if.1.Name", "r");
+    if (!fp)
+    {
+        CcspTraceError(("%s: Failed to run psmcli\n", __func__));
+        return;
+    }
+
+    if (!fgets(temp_ifname, sizeof(temp_ifname), fp))
+    {
+        CcspTraceError(("%s: No output from psmcli\n", __func__));
+        pclose(fp);
+        return;
+    }
+
+    pclose(fp);
+
+    /* Remove newline */
+    temp_ifname[strcspn(temp_ifname, "\n")] = '\0';
+
+    if (strlen(temp_ifname) == 0)
+    {
+        CcspTraceError(("%s: WAN interface empty\n", __func__));
+        return;
+    }
+
+    /* Open nvram file */
+    nvram_fp = fopen(nvram_file, "w");
+    if (!nvram_fp)
+    {
+        CcspTraceError(("%s: Failed to open %s\n", __func__, nvram_file));
+        return;
+    }
+
+    fprintf(nvram_fp, "%s\n", temp_ifname);
+    fclose(nvram_fp);
+
+    CcspTraceInfo(("%s: WAN interface '%s' written to %s\n",
+                   __func__, temp_ifname, nvram_file));
+}
+#endif
 
 #if defined (FEATURE_RDKB_WAN_MANAGER)
 ANSC_STATUS GetEthPhyInterfaceName(INT index, CHAR *ifname, INT ifnameLength)
