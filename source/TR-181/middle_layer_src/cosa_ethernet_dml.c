@@ -1693,11 +1693,15 @@ EthRdkInterface_SetParamStringValue
        if ( ANSC_STATUS_SUCCESS == CosaDmlEthPortSetName(pEthLink->Name, pString))
        {
            /* CID - 281826 Copy into fixed size buffer */
-           if(strlen(pString) < (sizeof(pEthLink->Name) -1))
+           if(strlen(pString) <= (sizeof(pEthLink->Name) -1))
 	       {
                AnscCopyString( pEthLink->Name, pString);
                return TRUE;
            }
+		   else
+		   {
+			   return FALSE;
+		   }
        }
        else
        {
