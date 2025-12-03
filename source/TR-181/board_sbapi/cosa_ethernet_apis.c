@@ -124,6 +124,8 @@ token_t sysevent_led_token;
 
 #define MAX_STR_LEN 256
 
+#define STR_SIZE 512
+
 extern char g_Subsystem[32];
 extern ANSC_HANDLE bus_handle;
 
@@ -381,8 +383,7 @@ static int removeSubStrWithSpace (char * str, char * sub)
     }
 
     /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
-    strncpy(str, tmp, len - 1);
-    str[len - 1] = '\0'; // Ensure null termination
+    snprintf(str, STR_SIZE, "%s", tmp);
     free(tmp);
 
     // remove last char if its space
@@ -432,7 +433,7 @@ ANSC_STATUS EthMgr_AddPortToLanBridge (PCOSA_DML_ETH_PORT_CONFIG pEthLink, BOOLE
 
     // set the correct value in PSM_BRLAN0_ETH_MEMBERS
     bool syncMembers = false;
-    char newPSMValue[512] = {0};
+    char newPSMValue[STR_SIZE] = {0};
     if (AddToBridge)
     {
         if (strstr(acPSMValue, ifname) == NULL)
@@ -4374,9 +4375,14 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
     INT iTotalInterfaces;
     INT iLoopCount;
 
+	if (NULL == ifname || IfIndex == NULL)
+	{
+        CcspTraceError(("Invalid Memory \n"));
+        return ANSC_STATUS_FAILURE;
+    }
     /*CID 340191: Data race condition (MISSING_LOCK)*/
     pthread_mutex_lock(&gmEthGInfo_mutex);
-    if (NULL == ifname || IfIndex == NULL || gpstEthGInfo == NULL)
+    if (gpstEthGInfo == NULL)
     {
         CcspTraceError(("Invalid Memory \n"));
         pthread_mutex_unlock(&gmEthGInfo_mutex);
