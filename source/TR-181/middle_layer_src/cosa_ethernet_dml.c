@@ -1698,6 +1698,10 @@ EthRdkInterface_SetParamStringValue
                AnscCopyString( pEthLink->Name, pString);
                return TRUE;
            }
+		   else
+		   {
+	           return FALSE;
+		   }
        }
        else
        {
