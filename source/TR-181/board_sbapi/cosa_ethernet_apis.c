@@ -267,7 +267,7 @@ static int sysctl_iface_set(const char *path, const char *ifname, const char *co
     return 0;
 }
 
-int Get_CommandOutput(char Command[],char *OutputValue)
+int Get_CommandOutput(char Command[],char *OutputValue, size_t outputSize)
 {
     char buf[BUF_SIZE] = {0};
     FILE *fp;
@@ -284,8 +284,8 @@ int Get_CommandOutput(char Command[],char *OutputValue)
     }
     pclose(fp);
     /* CID 337686 : Calling risky function (DC.STRING_BUFFER) fix */
-    strncpy(OutputValue, buf, strlen(buf)+1);
-    OutputValue[strlen(buf)+1] = '\0';
+    strncpy(OutputValue, buf, outputSize - 1);
+    OutputValue[outputSize - 1] = '\0';
     CcspTraceInfo(("ethwan_initialized:%s \n",OutputValue));
     return 0;
 }
@@ -306,7 +306,7 @@ void copy_command_output(FILE *fp, char * buf, int len)
 bool isEthwan_initialized()
 {
 	char OutputValue[120] = {0};
-	Get_CommandOutput("sysevent get ethwan-initialized",OutputValue);
+	Get_CommandOutput("sysevent get ethwan-initialized",OutputValue, sizeof(OutputValue));
 	if(atoi(OutputValue)==1)
 	{
 		CcspTraceInfo(("ethwan-initialized\n"));
@@ -363,7 +363,7 @@ static int removeSubStrWithSpace (char * str, char * sub)
         CcspTraceError(("%s %d: malloc failed\n", __FUNCTION__, __LINE__));
         return ANSC_STATUS_FAILURE;
     }
-    memset (tmp, 0, sizeof(len));
+    memset (tmp, 0, len);
 
     char delimit[2] = " ";
     char * token = strtok (str, delimit);
@@ -382,7 +382,7 @@ static int removeSubStrWithSpace (char * str, char * sub)
 
     /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
     strncpy(str, tmp, len - 1);
-	str[len - 1] = '\0'; // Ensure null termination
+    str[len - 1] = '\0'; // Ensure null termination
     free(tmp);
 
     // remove last char if its space
@@ -1890,7 +1890,7 @@ ANSC_STATUS CosaDmlIfaceFinalize(char *pValue, BOOL isAutoWanMode)
     // configure bridge for all partner IDs
     configureBridge = TRUE;
 
-    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue);
+    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue, sizeof(OutputValue));
     if(strncmp (OutputValue, "true", strlen("true")) == 0 )
     {
         // In case VlanDiscoverySupport enabled, using VlanManager to configure WAN interface
@@ -3147,7 +3147,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
 
 
 #if defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
-	Get_CommandOutput("cat /tmp/factory_nvram.data | grep RG_WAN | awk '{print $NF}'",wan_mac);
+	Get_CommandOutput("cat /tmp/factory_nvram.data | grep RG_WAN | awk '{print $NF}'",wan_mac, sizeof(wan_mac));
 #else
     memset(&macAddr,0,sizeof(macaddr_t));
     getInterfaceMacAddress(&macAddr,wanPhyName);
@@ -3416,7 +3416,7 @@ CosaDmlEthInit(
     char OutputValue[120] = {0};
     char wan_mac[18];
 
-    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue);
+    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue, sizeof(OutputValue));
     if(strncmp (OutputValue, "true", strlen("true")) != 0 )
     {
         // In case VlanDiscoverySupport enabled, using VlanManager to configure WAN interface
