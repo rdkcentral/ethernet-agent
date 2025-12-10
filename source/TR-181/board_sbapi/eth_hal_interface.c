@@ -398,7 +398,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceDebug(("<EthMonThrd> Total ethernet count from HAL=%d, flags: bProcessFurther=%d, isDeleteAllDone=%d\n", ulTotalEthDeviceCount, bProcessFurther, isDeleteAllDone));
+		CcspTraceDebug(("<EthMonThrd> Total ethernet count from HAL=%lu, flags: bProcessFurther=%d, isDeleteAllDone=%d\n", ulTotalEthDeviceCount, bProcessFurther, isDeleteAllDone));
 		if( bProcessFurther )
 		{
 			/* 
