@@ -390,7 +390,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 		static BOOL   isDeleteAllDone	 	= FALSE;
 
 
-//		CcspTraceInfo(("<EthMonThrd> Iteration Start\n") );
+		CcspTraceDebug(("<EthMonThrd> %s: wake up trigger\n", __FUNCTION__));
 		//Get Associated Device Details from HAL. Do nothing if failure case
 		if(-1 == CcspHalExtSw_getAssociatedDevice( &ulTotalEthDeviceCount, &pstRecvEthDevice ))
 		{
@@ -398,6 +398,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
+		CcspTraceDebug(("<EthMonThrd> Total ethernet count from HAL - %d, flags: bProcessFurther=%d, isDeleteAllDone=%d\n", ulTotalEthDeviceCount, bProcessFurther, isDeleteAllDone));
 		if( bProcessFurther )
 		{
 			/* 
@@ -439,9 +440,10 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				bProcessFurther = FALSE;
 			}
 
+			CcspTraceDebug(("<EthMonThrd> %s %d, flags: bProcessFurther=%d, isDeleteAllDone=%d\n", __FUNCTION__,__LINE__, bProcessFurther, isDeleteAllDone));
 			if( bProcessFurther )
 			{
-//				CcspTraceInfo(("<EthMonThrd> - Host(+) Loop Start\n") );
+				CcspTraceDebug(("<EthMonThrd> - Host processing start\n") );
 
 				// Reset isDeleteAllDone variable to proceed further from next iteration
 				isDeleteAllDone = FALSE;
@@ -469,6 +471,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 					if( 0 == ValidateClient( tmp_mac_id ) )
 					{
                                            //Delete and send notification
+					   CcspTraceDebug(("<EthMonThrd> - Delete host and send notification, mac:%s\n", tmp_mac_id));
                                            CcspHalExtSw_DeleteHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					   continue;
 					}
@@ -478,10 +481,12 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 					if ( NULL == CcspHalExtSw_FindHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, NULL ) )
 					{
 						//Add and send notification  
+					        CcspTraceDebug(("<EthMonThrd> - host Add and send notification, mac:%s\n", tmp_mac_id));
 						CcspHalExtSw_AddHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 
 					//Add in temp hash list and Don't send notification  
+					CcspTraceDebug(("<EthMonThrd> - Add host - tmp list, mac:%s\n", tmp_mac_id));
 					CcspHalExtSw_AddHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayTempList, FALSE );
 				}
 
@@ -499,11 +504,13 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						)
 					{
 						//Delete and Need to send notification	 
+					        CcspTraceDebug(("<EthMonThrd> - Delete and send notification - disconnect\n"));
 						CcspHalExtSw_DeleteHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 				}
 
 				//Delete all hosts from temp hash list
+				CcspTraceDebug(("<EthMonThrd> - Delete all host - tmp list\n"));
 				CcspHalExtSw_DeleteAllHosts( eth_device_hashArrayTempList, FALSE );
 
 //				CcspTraceInfo(("<EthMonThrd> - Host(-) Loop End\n") );
