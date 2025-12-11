@@ -601,18 +601,28 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
     if(skfd == -1)
        return COSA_DML_IF_STATUS_Error;
 
-    /* CID 281944 Copy into fixed size buffer fix */
-    strncpy (ifr.ifr_name, (char*)name, sizeof(ifr.ifr_name)-1);
+    CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: name=%s\n", (char*)name));
+
+    if (strcmp((char*)name, "sw_1") == 0) {
+        strncpy(ifr.ifr_name, "eth0", sizeof(ifr.ifr_name)-1);
+        ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
+    } else {
+       /* CID 281944 Copy into fixed size buffer fix */
+        strncpy(ifr.ifr_name, (char*)name, sizeof(ifr.ifr_name)-1);
+        ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
+    }
 
     if (!isValid((char*)name)) {
 	/* CID 162574 Resource leak */
 	close(skfd);
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [1]\n"));
         return COSA_DML_IF_STATUS_Error;
     }
     AnscTraceFlow(("%s...\n", __FUNCTION__));
     if (ioctl(skfd, SIOCGIFFLAGS, &ifr) < 0) {
         if (errno == ENODEV) {
             close(skfd);
+	    CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [2]\n"));
             return COSA_DML_IF_STATUS_Error;
         }
 		
@@ -621,9 +631,11 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 
 		if ( FALSE == getIfAvailability( name ) )
 		{
+			CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [3]\n"));
 			return COSA_DML_IF_STATUS_NotPresent;
 		}
 
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [4]\n"));
         return COSA_DML_IF_STATUS_Unknown;
     }
     close(skfd);
@@ -635,10 +647,12 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
     
     if ( ifr.ifr_flags & IFF_UP )
     {
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: UP\n"));
         return COSA_DML_IF_STATUS_Up;
     }
     else
     {
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: DOWN\n"));
         return COSA_DML_IF_STATUS_Down;
     }
 }
