@@ -603,14 +603,9 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 
     CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: name=%s\n", (char*)name));
 
-    if (strcmp((char*)name, "sw_1") == 0) {
-        strncpy(ifr.ifr_name, "eth0", sizeof(ifr.ifr_name)-1);
-        ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
-    } else {
-       /* CID 281944 Copy into fixed size buffer fix */
-        strncpy(ifr.ifr_name, (char*)name, sizeof(ifr.ifr_name)-1);
-        ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
-    }
+    /* CID 281944 Copy into fixed size buffer fix */
+    strncpy(ifr.ifr_name, (char*)name, sizeof(ifr.ifr_name)-1);
+    ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
 
     if (!isValid((char*)name)) {
 	/* CID 162574 Resource leak */
