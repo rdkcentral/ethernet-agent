@@ -502,6 +502,7 @@ int _getMac(char* ifName, char* mac){
     
     AnscTraceFlow(("%s...\n", __FUNCTION__));
 
+    CcspTraceDebug(("cosa_ethernet_apis.c - _getMac: name=%s\n", ifName));
     /* CID 281903 Copy into fixed size buffer fix */
     strncpy (ifr.ifr_name, ifName , sizeof(ifr.ifr_name)-1);
     
@@ -595,6 +596,7 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 {
     struct ifreq ifr;
     int skfd = -1;
+    AnscTraceFlow(("%s... name %s\n", __FUNCTION__,name));
     
     skfd = socket(AF_INET, SOCK_DGRAM, 0);
     /* CID: 56442 Argument cannot be negative*/
@@ -2091,6 +2093,7 @@ BOOL CosaDmlEthWanLinkStatus()
 
     port += CCSP_HAL_ETHSW_EthPort1; /* ETH WAN HALs start from 0 but Ethernet Switch HALs start with 1*/
 
+    CcspTraceDebug(("cosa_ethernet_apis.c - CosaDmlEthWanLinkStatus calling HAL CcspHalEthSwGetPortStatus\n"));
     status = CcspHalEthSwGetPortStatus(port, &LinkRate, &DuplexMode, &LinkStatus);
 
     if ( status == RETURN_OK )
