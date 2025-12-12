@@ -597,6 +597,8 @@ CosaDmlEthPortGetDinfo
         return ANSC_STATUS_FAILURE;
     }
 
+    CcspTraceDebug(("cosa_ethernet_apis_arm.c - CosaDmlEthPortGetDinfo: num=%lu,%lu name=%s,%s\n", 
+			    ulInstanceNumber, pEthIf->instanceNumber, pEthIf->sInfo->Name, pEthIf->Alias));
     pEthIf->control->getDInfo(pEthIf, pInfo);
 
     pInfo->LastChange = pEthIf->LastChange;
@@ -1131,6 +1133,7 @@ static int getIfStats(PCosaEthInterfaceInfo pEthIf, PCOSA_DML_ETH_STATS pStats)
 
 static int getIfDInfo(PCosaEthInterfaceInfo pEthIf, PCOSA_DML_ETH_PORT_DINFO pInfo)
 {
+    CcspTraceDebug(("cosa_ethernet_apis_arm.c - getIfDInfo\n"));
     pInfo->Status = getIfStatus((PUCHAR)pEthIf->sInfo->Name, NULL);
 
     return 0;

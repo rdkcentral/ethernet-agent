@@ -308,6 +308,7 @@ Interface_GetParamUlongValue
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "Status") == 0)
     {
+        CcspTraceDebug(("Interface_GetParamUlongValue: Get status case, calling CosaDmlEthPortGetDinfo\n"));
         /* collect value */
         CosaDmlEthPortGetDinfo(NULL, pEthernetPortFull->Cfg.InstanceNumber, &pEthernetPortFull->DynamicInfo);
 

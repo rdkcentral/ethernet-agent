@@ -502,6 +502,7 @@ int _getMac(char* ifName, char* mac){
     
     AnscTraceFlow(("%s...\n", __FUNCTION__));
 
+    CcspTraceDebug(("cosa_ethernet_apis.c - _getMac: name=%s\n", ifName));
     /* CID 281903 Copy into fixed size buffer fix */
     strncpy (ifr.ifr_name, ifName , sizeof(ifr.ifr_name)-1);
     
@@ -595,24 +596,30 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 {
     struct ifreq ifr;
     int skfd = -1;
+    AnscTraceFlow(("%s... name %s\n", __FUNCTION__,name));
     
     skfd = socket(AF_INET, SOCK_DGRAM, 0);
     /* CID: 56442 Argument cannot be negative*/
     if(skfd == -1)
        return COSA_DML_IF_STATUS_Error;
 
+    CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: name=%s\n", (char*)name));
+
     /* CID 281944 Copy into fixed size buffer fix */
-    strncpy (ifr.ifr_name, (char*)name, sizeof(ifr.ifr_name)-1);
+    strncpy(ifr.ifr_name, (char*)name, sizeof(ifr.ifr_name)-1);
+    ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
 
     if (!isValid((char*)name)) {
 	/* CID 162574 Resource leak */
 	close(skfd);
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [1]\n"));
         return COSA_DML_IF_STATUS_Error;
     }
     AnscTraceFlow(("%s...\n", __FUNCTION__));
     if (ioctl(skfd, SIOCGIFFLAGS, &ifr) < 0) {
         if (errno == ENODEV) {
             close(skfd);
+	    CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [2]\n"));
             return COSA_DML_IF_STATUS_Error;
         }
 		
@@ -621,9 +628,11 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 
 		if ( FALSE == getIfAvailability( name ) )
 		{
+			CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [3]\n"));
 			return COSA_DML_IF_STATUS_NotPresent;
 		}
 
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: [4]\n"));
         return COSA_DML_IF_STATUS_Unknown;
     }
     close(skfd);
@@ -635,10 +644,12 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
     
     if ( ifr.ifr_flags & IFF_UP )
     {
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: UP\n"));
         return COSA_DML_IF_STATUS_Up;
     }
     else
     {
+	CcspTraceDebug(("cosa_ethernet_apis.c - getIfStatus: DOWN\n"));
         return COSA_DML_IF_STATUS_Down;
     }
 }
@@ -2082,6 +2093,7 @@ BOOL CosaDmlEthWanLinkStatus()
 
     port += CCSP_HAL_ETHSW_EthPort1; /* ETH WAN HALs start from 0 but Ethernet Switch HALs start with 1*/
 
+    CcspTraceDebug(("cosa_ethernet_apis.c - CosaDmlEthWanLinkStatus calling HAL CcspHalEthSwGetPortStatus\n"));
     status = CcspHalEthSwGetPortStatus(port, &LinkRate, &DuplexMode, &LinkStatus);
 
     if ( status == RETURN_OK )
