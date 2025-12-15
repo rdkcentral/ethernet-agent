@@ -124,6 +124,8 @@ token_t sysevent_led_token;
 
 #define MAX_STR_LEN 256
 
+#define STR_SIZE 512
+
 extern char g_Subsystem[32];
 extern ANSC_HANDLE bus_handle;
 
@@ -267,7 +269,7 @@ static int sysctl_iface_set(const char *path, const char *ifname, const char *co
     return 0;
 }
 
-int Get_CommandOutput(char Command[],char *OutputValue)
+int Get_CommandOutput(char Command[],char *OutputValue, size_t outputSize)
 {
     char buf[BUF_SIZE] = {0};
     FILE *fp;
@@ -283,7 +285,9 @@ int Get_CommandOutput(char Command[],char *OutputValue)
         copy_command_output(fp, buf, sizeof(buf));
     }
     pclose(fp);
-    strcpy(OutputValue,buf);
+    /* CID 337686 : Calling risky function (DC.STRING_BUFFER) fix */
+    strncpy(OutputValue, buf, outputSize - 1);
+    OutputValue[outputSize - 1] = '\0';
     CcspTraceInfo(("ethwan_initialized:%s \n",OutputValue));
     return 0;
 }
@@ -303,8 +307,8 @@ void copy_command_output(FILE *fp, char * buf, int len)
 }
 bool isEthwan_initialized()
 {
-	char OutputValue[120];
-	Get_CommandOutput("sysevent get ethwan-initialized",OutputValue);
+	char OutputValue[120] = {0};
+	Get_CommandOutput("sysevent get ethwan-initialized",OutputValue, sizeof(OutputValue));
 	if(atoi(OutputValue)==1)
 	{
 		CcspTraceInfo(("ethwan-initialized\n"));
@@ -361,7 +365,7 @@ static int removeSubStrWithSpace (char * str, char * sub)
         CcspTraceError(("%s %d: malloc failed\n", __FUNCTION__, __LINE__));
         return ANSC_STATUS_FAILURE;
     }
-    memset (tmp, 0, sizeof(len));
+    memset (tmp, 0, len);
 
     char delimit[2] = " ";
     char * token = strtok (str, delimit);
@@ -378,7 +382,8 @@ static int removeSubStrWithSpace (char * str, char * sub)
         token = strtok(NULL, delimit);
     }
 
-    strcpy(str, tmp);
+    /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
+    snprintf(str, STR_SIZE, "%s", tmp);
     free(tmp);
 
     // remove last char if its space
@@ -428,7 +433,7 @@ ANSC_STATUS EthMgr_AddPortToLanBridge (PCOSA_DML_ETH_PORT_CONFIG pEthLink, BOOLE
 
     // set the correct value in PSM_BRLAN0_ETH_MEMBERS
     bool syncMembers = false;
-    char newPSMValue[512] = {0};
+    char newPSMValue[STR_SIZE] = {0};
     if (AddToBridge)
     {
         if (strstr(acPSMValue, ifname) == NULL)
@@ -1886,7 +1891,7 @@ ANSC_STATUS CosaDmlIfaceFinalize(char *pValue, BOOL isAutoWanMode)
     // configure bridge for all partner IDs
     configureBridge = TRUE;
 
-    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue);
+    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue, sizeof(OutputValue));
     if(strncmp (OutputValue, "true", strlen("true")) == 0 )
     {
         // In case VlanDiscoverySupport enabled, using VlanManager to configure WAN interface
@@ -2347,7 +2352,11 @@ void* ThreadMonitorPhyAndNotify(void *arg)
             {
                  snprintf(acTmpPhyStatus, sizeof(acTmpPhyStatus), "%s", "Down");
             }
-            CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acSetParamName, acTmpPhyStatus, ccsp_string, TRUE);
+            /* CID 339366: Unchecked return value fix */
+            if(CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acSetParamName, acTmpPhyStatus, ccsp_string, TRUE) != ANSC_STATUS_SUCCESS)
+            {
+                CcspTraceError(("Failed to set the param %s with value %s\n",acSetParamName,acTmpPhyStatus));
+            }
             pEthWanCfg->MonitorPhyStatusAndNotify = FALSE;
         }
     }
@@ -3139,7 +3148,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
 
 
 #if defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
-	Get_CommandOutput("cat /tmp/factory_nvram.data | grep RG_WAN | awk '{print $NF}'",wan_mac);
+	Get_CommandOutput("cat /tmp/factory_nvram.data | grep RG_WAN | awk '{print $NF}'",wan_mac, sizeof(wan_mac));
 #else
     memset(&macAddr,0,sizeof(macaddr_t));
     getInterfaceMacAddress(&macAddr,wanPhyName);
@@ -3408,7 +3417,7 @@ CosaDmlEthInit(
     char OutputValue[120] = {0};
     char wan_mac[18];
 
-    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue);
+    Get_CommandOutput("sysevent get VlanDiscoverySupport",OutputValue, sizeof(OutputValue));
     if(strncmp (OutputValue, "true", strlen("true")) != 0 )
     {
         // In case VlanDiscoverySupport enabled, using VlanManager to configure WAN interface
@@ -4350,8 +4359,10 @@ INT CosaDmlEthPortLinkStatusCallback(CHAR *ifname, CHAR *state)
         pthread_mutex_lock(&gmEthGInfo_mutex);
         gpstEthGInfo[ifIndex].LinkStatus = link_status;
         snprintf(MSGQWanData.Name, sizeof(MSGQWanData.Name), "%s", gpstEthGInfo[ifIndex].Name);
-        pthread_mutex_unlock(&gmEthGInfo_mutex);
         MSGQWanData.LinkStatus = gpstEthGInfo[ifIndex].LinkStatus;
+        /*CID 340148: Data race condition (MISSING_LOCK)*/
+        /* CID 340445: Data race condition (MISSING_LOCK)*/
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
         //Send message to Queue
         CosaDmlEthPortSendLinkStatusToEventQueue(&MSGQWanData);
     }
@@ -4364,14 +4375,21 @@ static ANSC_STATUS CosaDmlEthPortGetIndexFromIfName(char *ifname, INT *IfIndex)
     INT iTotalInterfaces;
     INT iLoopCount;
 
-    if (NULL == ifname || IfIndex == NULL || gpstEthGInfo == NULL)
+	if (NULL == ifname || IfIndex == NULL)
+	{
+        CcspTraceError(("Invalid Memory \n"));
+        return ANSC_STATUS_FAILURE;
+    }
+    /*CID 340191: Data race condition (MISSING_LOCK)*/
+    pthread_mutex_lock(&gmEthGInfo_mutex);
+    if (gpstEthGInfo == NULL)
     {
         CcspTraceError(("Invalid Memory \n"));
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
 
     *IfIndex = -1;
-    pthread_mutex_lock(&gmEthGInfo_mutex);
 
     iTotalInterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
@@ -4426,12 +4444,17 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
 
     Totalinterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
+	/* CID 340715: Data race condition (MISSING_LOCK) fix */
+	/*CID 340188: Data race condition (MISSING_LOCK) fix */
+    /*CID 339967: Data race condition (MISSING_LOCK)fix */
+    pthread_mutex_lock(&gmEthGInfo_mutex);
     //Allocate memory for Eth Global Status Information
     gpstEthGInfo = (PCOSA_DML_ETH_PORT_GLOBAL_CONFIG)AnscAllocateMemory(sizeof(COSA_DML_ETH_PORT_GLOBAL_CONFIG) * Totalinterfaces);
 
-    //Return failure if allocation failiure
+    //Return failure if allocation failure
     if (NULL == gpstEthGInfo)
     {
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
         return ANSC_STATUS_FAILURE;
     }
 
@@ -4473,6 +4496,7 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
 #endif //FEATURE_RDKB_WAN_MANAGER
     }
 
+    pthread_mutex_unlock(&gmEthGInfo_mutex);
     return ANSC_STATUS_SUCCESS;
 }
 
@@ -4518,6 +4542,8 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
             continue;
         }
 
+        /* CID 340283 : Data race condition (MISSING_LOCK)*/
+        pthread_mutex_lock(&gmEthGInfo_mutex);
         for (INT iEthLoopCount = 0; iEthLoopCount < iTotalEthEntries; iEthLoopCount++) {
             //Compare name
             if (0 == strcmp(acParamValue, gpstEthGInfo[iEthLoopCount].Name))
@@ -4532,6 +4558,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                 if (CosaDmlEthSetParamValues(WAN_COMPONENT_NAME, WAN_DBUS_PATH, acParamName, acParamValue, ccsp_string, TRUE) != ANSC_STATUS_SUCCESS)
                 {
                     CcspTraceError(("%s %d: Unable to set param name %s with value %s\n", __FUNCTION__, __LINE__, acParamName, acParamValue));
+                    pthread_mutex_unlock(&gmEthGInfo_mutex);
                     return ANSC_STATUS_FAILURE;
                 }
 #endif
@@ -4551,6 +4578,7 @@ static ANSC_STATUS CosaDmlMapWanCPEtoEthInterfaces(char* pInterface, unsigned in
                break;
             }
         }
+        pthread_mutex_unlock(&gmEthGInfo_mutex);
     }
 
     return ANSC_STATUS_SUCCESS;
@@ -4666,6 +4694,8 @@ static void *CosaDmlEthEventHandlerThread(void *arg)
             char acTmpPhyStatus[32] = {0};
             BOOL IsValidStatus = TRUE;
             memcpy(&MSGQWanData, EventMsg.Msg, sizeof(CosaETHMSGQWanData));
+            /* CID 340631: String not null terminated*/
+            MSGQWanData.Name[sizeof(MSGQWanData.Name) - 1] = '\0';  // Ensure null termination
             CcspTraceInfo(("%s %d - Event Msg Received\n", __FUNCTION__, __LINE__));
             CcspTraceInfo(("****** [%s,%d]\n", MSGQWanData.Name, MSGQWanData.LinkStatus));
 
@@ -4715,7 +4745,8 @@ static void *CosaDmlEthEventHandlerThread(void *arg)
     } while (1);
 
     //exit from thread
-    pthread_exit(NULL);
+    /*CID 559757: Structurally dead code (UNREACHABLE) fix*/
+  //  pthread_exit(NULL);
 }
 
 /* Get data from the other component. */
