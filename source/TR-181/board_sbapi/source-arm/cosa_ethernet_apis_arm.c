@@ -944,10 +944,12 @@ static int puma6_getSwitchDInfo(PCosaEthInterfaceInfo eth, PCOSA_DML_ETH_PORT_DI
     }
     #endif
 
+    CcspTraceDebug(("cosa_ethernet_apis_arm.c - puma6_getSwitchDInfo, name=%s\n", (PUCHAR)eth->sInfo->Name));
     status = CcspHalEthSwGetPortStatus(port, &LinkRate, &DuplexMode, &LinkStatus);
 
     if ( status == RETURN_OK )
     {
+	    CcspTraceDebug(("cosa_ethernet_apis_arm.c - puma6_getSwitchDInfo: HAL status=%d\n", LinkStatus));
         switch ( LinkStatus )
         {
             case CCSP_HAL_ETHSW_LINK_Up:
@@ -1020,6 +1022,7 @@ static int puma6_getSwitchDInfo(PCosaEthInterfaceInfo eth, PCOSA_DML_ETH_PORT_DI
     }
     else
     {
+	    CcspTraceDebug(("cosa_ethernet_apis_arm.c - puma6_getSwitchDInfo: HAL failure\n"));
         return ANSC_STATUS_FAILURE;
     }
 
