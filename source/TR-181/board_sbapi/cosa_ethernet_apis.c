@@ -474,7 +474,7 @@ ANSC_STATUS EthMgr_AddPortToLanBridge (PCOSA_DML_ETH_PORT_CONFIG pEthLink, BOOLE
         }
         
         
-#if (defined (_XB6_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_))
+#if (defined (_XB6_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_)) && !defined(_XB10_PRODUCT_REQ_) 
         /* 
         * Workaround for platforms using HW switching when AltWan (Ethernet WAN) is disabled.
         * Set the admin status to UP, as it might be set to DOWN while disabling EthWan.
@@ -1749,7 +1749,7 @@ INT WanBridgeConfigurationBcm(WAN_MODE_BRIDGECFG *pCfg)
             #endif 
 
             
-#if (defined (_XB6_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_)) && defined(WAN_MANAGER_UNIFICATION_ENABLED) //Changing only the WanUnification behaviour
+#if (defined (_XB6_PRODUCT_REQ_) || defined (_CBR2_PRODUCT_REQ_)) && defined(WAN_MANAGER_UNIFICATION_ENABLED) && !defined(_XB10_PRODUCT_REQ_) //Changing only the WanUnification behaviour
             /*
             * Workaround for platforms using HW switching when AltWan (Ethernet WAN) is disabled.
             * This is due to a limitation in the HAL API for enabling/disabling Ethernet WAN, which also controls DOCSIS.
