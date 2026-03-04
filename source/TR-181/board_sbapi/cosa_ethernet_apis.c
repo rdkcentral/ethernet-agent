@@ -264,7 +264,6 @@ static int sysctl_iface_set(const char *path, const char *ifname, const char *co
         return -1;
     }
 
-    close(fd);
 
     return 0;
 }
@@ -384,7 +383,6 @@ static int removeSubStrWithSpace (char * str, char * sub)
 
     /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
     snprintf(str, STR_SIZE, "%s", tmp);
-    free(tmp);
 
     // remove last char if its space
     if (str[strlen(str) - 1] == ' ')

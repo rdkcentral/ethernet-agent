@@ -128,6 +128,7 @@ ssp_create
     /* Create ComponentCommonDatamodel interface*/
     if ( !pDslhLcbIf )
     {
+        pDslhLcbIf->InterfaceId  = CCSP_LIBCBK_INTERFACE_ID;
         pDslhLcbIf = (PDSLH_LCB_INTERFACE)AnscAllocateMemory(sizeof(DSLH_LCB_INTERFACE));
 
         if ( !pDslhLcbIf )
@@ -136,7 +137,7 @@ ssp_create
         }
         else
         {
-            rc = strcpy_s(pDslhLcbIf->Name,sizeof(pDslhLcbIf->Name), CCSP_LIBCBK_INTERFACE_NAME);
+            rc = strcpy_s(pDslhLcbIf->Name,sizeof(pDslhLcbIf->Name) + 1 , CCSP_LIBCBK_INTERFACE_NAME);
              if(rc != EOK)
             {
              ERR_CHK(rc);
@@ -144,7 +145,6 @@ ssp_create
            }
 
 
-            pDslhLcbIf->InterfaceId              = CCSP_LIBCBK_INTERFACE_ID;
             pDslhLcbIf->hOwnerContext            = NULL;
             pDslhLcbIf->Size                     = sizeof(DSLH_LCB_INTERFACE);
 
@@ -244,11 +244,9 @@ ssp_cancel
     pDslhCpeController->Cancel((ANSC_HANDLE)pDslhCpeController);
     AnscFreeMemory(pDslhCpeController);
 
-    if ( pSsdCcdIf ) AnscFreeMemory(pSsdCcdIf);
     if (  g_pComponent_COMMON_ethagent ) AnscFreeMemory( g_pComponent_COMMON_ethagent);
 
      g_pComponent_COMMON_ethagent = NULL;
-    pSsdCcdIf                = NULL;
     pDslhCpeController       = NULL;
 
     return ANSC_STATUS_SUCCESS;
