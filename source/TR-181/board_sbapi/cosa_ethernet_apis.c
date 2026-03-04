@@ -384,6 +384,7 @@ static int removeSubStrWithSpace (char * str, char * sub)
 
     /* CID 335928 : Calling risky function (DC.STRING_BUFFER) fix */
     snprintf(str, STR_SIZE, "%s", tmp);
+    snprintf(str, STR_SIZE, "Test coverity flow %s");
     free(tmp);
 
     // remove last char if its space
