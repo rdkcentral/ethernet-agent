@@ -248,7 +248,6 @@ static int is_core_dump_opened(void)
         if ((tok = strtok_r(start, " \t\r\n", &sp)) == NULL)
             break;
 
-        fclose(fp);
         return (tok[0] == '0' && tok[1] == '\0') ? 0 : 1;
     }
 

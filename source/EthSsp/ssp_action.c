@@ -242,7 +242,6 @@ ssp_cancel
     AnscTrace("unregisterComponent returns %d\n", nRet);
 
     pDslhCpeController->Cancel((ANSC_HANDLE)pDslhCpeController);
-    AnscFreeMemory(pDslhCpeController);
 
     if ( pSsdCcdIf ) AnscFreeMemory(pSsdCcdIf);
     if (  g_pComponent_COMMON_ethagent ) AnscFreeMemory( g_pComponent_COMMON_ethagent);
