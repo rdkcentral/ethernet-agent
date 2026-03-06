@@ -131,6 +131,7 @@ extern ANSC_HANDLE bus_handle;
 
 #define PSM_ETHMANAGER_CFG_COUNT  "dmsb.ethagent.ethifcount"
 #define PSM_ETHMANAGER_CFG_NAME   "dmsb.ethagent.if.%d.Name"
+#define PSM_CONFIG_ETH_WAN "dmsb.ethagent.config.wan"
 #define PSM_ETHMANAGER_LAN_BRIDGE_PORT  "dmsb.ethagent.lanBridgePort"
 #define PSM_BRLAN0_ETH_MEMBERS    "dmsb.l2net.1.Members.Eth"
 #define BRLAN0_BRIDGE_INSTANCE    1
@@ -652,27 +653,6 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 **************************************************************************/
 
 /* ETH WAN Fallback Interface Name - Should eventually move away from Compile Time */
-#if defined (_XB10_PRODUCT_REQ_)
-#define ETHWAN_DEF_INTF_NAME "eth1"
-#elif defined (_XB7_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_)
-#define ETHWAN_DEF_INTF_NAME "eth3"
-#elif defined (_CBR2_PRODUCT_REQ_)
-#define ETHWAN_DEF_INTF_NAME "eth5"
-#elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
-#define ETHWAN_DEF_INTF_NAME "eth4"
-#elif defined (INTEL_PUMA7)
-#define ETHWAN_DEF_INTF_NAME "nsgmii0"
-#elif defined (_PLATFORM_TURRIS_)
-#define ETHWAN_DEF_INTF_NAME "eth2"
-#elif defined (_COSA_QCA_ARM_) && defined(_PLATFORM_IPQ807x)
-#define ETHWAN_DEF_INTF_NAME "eth4"
-#elif defined (_COSA_QCA_ARM_) && defined (_PLATFORM_IPQ95xx)
-#define ETHWAN_DEF_INTF_NAME "eth5"
-#elif defined (_PLATFORM_BANANAPI_R4_)
-#define ETHWAN_DEF_INTF_NAME "lan0"
-#else
-#define ETHWAN_DEF_INTF_NAME "eth0"
-#endif
 
 #define ETH_HOST_PARAMVALUE_TRUE "true"
 #define ETH_HOST_PARAMVALUE_FALSE "false"
@@ -684,6 +664,7 @@ COSA_DML_IF_STATUS getIfStatus(const PUCHAR name, struct ifreq *pIfr)
 #define BLINK   1
 #define RED 3
 
+static char ETHWAN_DEF_INTF_NAME[5]="eth0";
 ANSC_STATUS is_usg_in_bridge_mode(BOOL *pBridgeMode);
 void CcspHalExtSw_SendNotificationForAllHosts( void );
 extern  ANSC_HANDLE bus_handle;
@@ -3061,6 +3042,37 @@ void getInterfaceMacAddress(macaddr_t* macAddr,char *pIfname)
     return;
 }
 
+static void logtofile(char *msg)
+{
+    FILE *logFile = fopen("/tmp/wan_manager.txt", "a+");
+    if (logFile != NULL)
+    {
+        fprintf(logFile,msg);
+        fclose(logFile);
+    }
+}
+
+ANSC_STATUS update_eth_wan_interface_info()
+{
+    char acPSMQuery[128] = {0};
+    char acPSMValue[64]  = {0};
+
+
+        snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);
+        if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
+        {
+             		logtofile("valling update_eth_wan_interface_info\n");
+             snprintf(ETHWAN_DEF_INTF_NAME, sizeof(ETHWAN_DEF_INTF_NAME), "%s0", acPSMValue);
+	     logtofile(ETHWAN_DEF_INTF_NAME);
+            // return ANSC_STATUS_FAILURE;
+        } else
+        {
+            CcspTraceError(("Failed to get %s\n", acPSMQuery));
+        }
+
+
+}	
+
 ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
 {
     char wanPhyName[64] = {0};
@@ -3345,6 +3357,7 @@ CosaDmlEthInit(
     PANSC_HANDLE phContext)
 {
     UNREFERENCED_PARAMETER(hDml);
+    update_eth_wan_interface_info();
 #if defined (FEATURE_RDKB_WAN_AGENT) || defined (FEATURE_RDKB_WAN_MANAGER)
     char PhyStatus[16] = {0};
     char WanOEInterface[16] = {0};
@@ -3651,6 +3664,10 @@ ANSC_STATUS
 CosaDmlEthPortInit(
     PANSC_HANDLE phContext)
 {
+
+    char acPSMQuery[128] = {0};
+    char acPSMValue[64]  = {0};
+
 #if defined (FEATURE_RDKB_WAN_AGENT)
     PCOSA_DATAMODEL_ETHERNET pMyObject = (PCOSA_DATAMODEL_ETHERNET)phContext;
     PCOSA_DML_ETH_PORT_CONFIG pETHlinkTemp = NULL;
@@ -3674,12 +3691,23 @@ CosaDmlEthPortInit(
         pETHlinkTemp[iLoopCount].WanStatus = ETH_WAN_DOWN;
         pETHlinkTemp[iLoopCount].LinkStatus = ETH_LINK_STATUS_DOWN;
         pETHlinkTemp[iLoopCount].ulInstanceNumber = iLoopCount + 1;
+
+        memset(acPSMQuery, 0, sizeof(acPSMQuery));
+        memset(acPSMValue, 0, sizeof(acPSMValue));
+        snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);
+        if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
+        {
+	     snprintf(pETHlinkTemp[iLoopCount].Name, sizeof(pETHlinkTemp[iLoopCount].Name), "%s%d", acPSMValue,iLoopCount);
+	     logtofile("\nupdating the eth value\n");
+	     logtofile(pETHlinkTemp[iLoopCount].Name);
+            // return ANSC_STATUS_FAILURE;
+        } else
+        {
+            CcspTraceError(("Failed to get %s\n", acPSMQuery));
+	    snprintf(pETHlinkTemp[iLoopCount].Name, sizeof(pETHlinkTemp[iLoopCount].Name), "eth%d",iLoopCount);
+	}    
         // Get  Name.
-	#if defined (_PLATFORM_BANANAPI_R4_)
-		snprintf(pETHlinkTemp[iLoopCount].Name, sizeof(pETHlinkTemp[iLoopCount].Name), "lan%d", iLoopCount);
-	#else	
-                snprintf(pETHlinkTemp[iLoopCount].Name, sizeof(pETHlinkTemp[iLoopCount].Name), "eth%d", iLoopCount);
-	#endif		
+        	
         snprintf(pETHlinkTemp[iLoopCount].Path, sizeof(pETHlinkTemp[iLoopCount].Path), "%s%d", ETHERNET_IF_PATH, iLoopCount + 1);
         pETHlinkTemp[iLoopCount].Upstream = FALSE;
         pETHlinkTemp[iLoopCount].WanValidated = FALSE;
@@ -3701,8 +3729,8 @@ CosaDmlEthPortInit(
     char infPortCapability[BUFLEN_32] = {0};
 #endif  //FEATURE_RDKB_AUTO_PORT_SWITCH
 
-    char acPSMQuery[128] = {0};
-    char acPSMValue[64]  = {0};
+    memset(acPSMQuery, 0, sizeof(acPSMQuery));
+    memset(acPSMValue, 0, sizeof(acPSMValue));
 
     snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_ETHMANAGER_CFG_COUNT);
     if ( CCSP_SUCCESS != DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
@@ -3759,13 +3787,23 @@ CosaDmlEthPortInit(
                 snprintf(pETHTemp->Name, sizeof(pETHTemp->Name), "sw_%d", iLoopCount + 1);
             }
             CcspTraceWarning(("\n ifname copied %s index %d\n",pETHTemp->Name,iLoopCount));
-#elif defined (_PLATFORM_BANANAPI_R4_)	    
-
-	    snprintf(pETHTemp->Name, sizeof(pETHTemp->Name), "lan%d", iLoopCount);
 #else
-            // Generate Name.
-            snprintf(pETHTemp->Name, sizeof(pETHTemp->Name), "eth%d", iLoopCount);
-#endif /* INTEL_PUMA7 */
+        memset(acPSMQuery, 0, sizeof(acPSMQuery));
+        memset(acPSMValue, 0, sizeof(acPSMValue));
+        snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);	    
+	if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
+        {
+           snprintf(pETHTemp->Name, sizeof(pETHTemp->Name), "%s%d", acPSMValue,iLoopCount);
+	   logtofile("\nvalue is \n");
+	   logtofile(pETHTemp->Name);
+            // return ANSC_STATUS_FAILURE;
+        }
+	else
+	{	
+		CcspTraceError(("Failed to get %s\n", acPSMQuery));
+		snprintf(pETHTemp->Name, sizeof(pETHTemp->Name), "eth%d", iLoopCount);
+	}	
+#endif	    
         }
 
         snprintf(pETHTemp->LowerLayers, sizeof(pETHTemp->LowerLayers), "%s%d", ETHERNET_IF_LOWERLAYERS, iLoopCount + 1);
@@ -3831,6 +3869,9 @@ ANSC_STATUS CosDmlEthPortUpdateGlobalInfo(PANSC_HANDLE phContext, char *ifname, 
 {
     INT iTotal = 0;
     PCOSA_DATAMODEL_ETHERNET pMyObject = (PCOSA_DATAMODEL_ETHERNET)phContext;
+    char acPSMQuery[128] = {0};
+    char acPSMValue[64]  = {0};
+
     if (ifname == NULL)
     {
         CcspTraceError(("%s Invalid data \n", __FUNCTION__));
@@ -3858,11 +3899,19 @@ ANSC_STATUS CosDmlEthPortUpdateGlobalInfo(PANSC_HANDLE phContext, char *ifname, 
         gpstEthGInfo[newIndex].LinkStatus = ETH_LINK_STATUS_DOWN;
         gpstEthGInfo[newIndex].WanValidated = TRUE; //Make default as True.
         gpstEthGInfo[newIndex].Enable = FALSE; //Make default as False.
-        #if defined(_PLATFORM_BANANAPI_R4_)
-		snprintf(gpstEthGInfo[newIndex].Name, sizeof(gpstEthGInfo[newIndex].Name), "lan%d", newIndex);
-        #else	
-        	snprintf(gpstEthGInfo[newIndex].Name, sizeof(gpstEthGInfo[newIndex].Name), "eth%d", newIndex);
-	#endif		
+        memset(acPSMQuery, 0, sizeof(acPSMQuery));
+        memset(acPSMValue, 0, sizeof(acPSMValue));
+        snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);
+        if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
+        {
+	   snprintf(gpstEthGInfo[newIndex].Name, sizeof(gpstEthGInfo[newIndex].Name), "%s%d", acPSMValue,newIndex);
+            // return ANSC_STATUS_FAILURE;
+        }
+        else
+        {
+                CcspTraceError(("Failed to get %s\n", acPSMQuery));
+		snprintf(gpstEthGInfo[newIndex].Name, sizeof(gpstEthGInfo[newIndex].Name), "eth%d", newIndex);
+        }	
         snprintf(gpstEthGInfo[newIndex].Path, sizeof(gpstEthGInfo[newIndex].Path), "%s%d", ETHERNET_IF_PATH, newIndex + 1 );
         snprintf(gpstEthGInfo[newIndex].LowerLayers, sizeof(gpstEthGInfo[newIndex].LowerLayers), "%s%d", ETHERNET_IF_LOWERLAYERS, newIndex + 1 );
         pthread_mutex_unlock(&gmEthGInfo_mutex);
@@ -3980,6 +4029,9 @@ ANSC_STATUS CosaDmlTriggerExternalEthPortLinkStatus(char *ifname, BOOL status)
 
 ANSC_STATUS CosaDmlEthGetPortCfg(INT nIndex, PCOSA_DML_ETH_PORT_CONFIG pEthLink)
 {
+    char acPSMValue[64]  = {0};
+    char acPSMQuery[128] = {0};
+
 #if defined (FEATURE_RDKB_WAN_AGENT)
     COSA_DML_ETH_LINK_STATUS linkstatus;
     COSA_DML_ETH_WAN_STATUS wan_status;
@@ -4000,12 +4052,19 @@ ANSC_STATUS CosaDmlEthGetPortCfg(INT nIndex, PCOSA_DML_ETH_PORT_CONFIG pEthLink)
         pEthLink->WanStatus = wan_status;
     }
 
-#if defined(_PLATFORM_BANANAPI_R4_)
-    	 snprintf(pEthLink->Name, sizeof(pEthLink->Name), "lan%d", nIndex);
-#else	 
 
-    	 snprintf(pEthLink->Name, sizeof(pEthLink->Name), "eth%d", nIndex);
-#endif	 
+        memset(acPSMQuery, 0, sizeof(acPSMQuery));
+        memset(acPSMValue, 0, sizeof(acPSMValue));
+        snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);
+        if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
+        {
+	     snprintf(pEthLink->Name, sizeof(pEthLink->Name), "%s%d", acPSMValue,nIndex);	
+        } else
+        {
+            CcspTraceError(("Failed to get %s\n", acPSMQuery));
+	    snprintf(pEthLink->Name, sizeof(pEthLink->Name), "eth%d", nIndex);
+        }
+
 #else
     UNREFERENCED_PARAMETER(nIndex);
     UNREFERENCED_PARAMETER(pEthLink);
@@ -4445,6 +4504,9 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
 {
     INT iLoopCount = 0;
     INT Totalinterfaces = 0;
+    char acPSMQuery[128] = {0};
+    char acPSMValue[64]  = {0};
+
 
     Totalinterfaces = CosaDmlEthGetTotalNoOfInterfaces();
 
@@ -4487,10 +4549,20 @@ static ANSC_STATUS CosDmlEthPortPrepareGlobalInfo()
                 snprintf(gpstEthGInfo[iLoopCount].Name, sizeof(gpstEthGInfo[iLoopCount].Name), "sw_%d", iLoopCount+1);
             }
             CcspTraceWarning(("\n ifname copied %s index %d\n",gpstEthGInfo[iLoopCount].Name,iLoopCount));
-#elif defined (_PLATFORM_BANANAPI_R4_)
-	    snprintf(gpstEthGInfo[iLoopCount].Name, sizeof(gpstEthGInfo[iLoopCount].Name), "lan%d", iLoopCount);
+	    
 #else
-            snprintf(gpstEthGInfo[iLoopCount].Name, sizeof(gpstEthGInfo[iLoopCount].Name), "eth%d", iLoopCount);
+        memset(acPSMQuery, 0, sizeof(acPSMQuery));
+        memset(acPSMValue, 0, sizeof(acPSMValue));
+        snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);
+        if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
+        {
+	     snprintf(gpstEthGInfo[iLoopCount].Name, sizeof(gpstEthGInfo[iLoopCount].Name), "%s%d", acPSMValue,iLoopCount);
+        } else
+        {
+            CcspTraceError(("Failed to get %s\n", acPSMQuery));
+	    snprintf(gpstEthGInfo[iLoopCount].Name, sizeof(gpstEthGInfo[iLoopCount].Name), "eth%d", iLoopCount);
+        }
+
 #endif
         }
         snprintf(gpstEthGInfo[iLoopCount].Path, sizeof(gpstEthGInfo[iLoopCount].Path), "%s%d", ETHERNET_IF_PATH, iLoopCount + 1);
@@ -5447,13 +5519,28 @@ static ANSC_STATUS  GetWan_InterfaceName (char* wanoe_ifacename, int length) {
         return ANSC_STATUS_FAILURE;
     }
 
-    char wanoe_ifname[WANOE_IFACENAME_LENGTH] = {0};
-    if (RETURN_OK != GWP_GetEthWanInterfaceName((unsigned char*)wanoe_ifname, sizeof(wanoe_ifname))) {
-        CcspTraceError(("[%s][%d] Failed to get wanoe interface name \n", __FUNCTION__, __LINE__));
-        return ANSC_STATUS_FAILURE;
-    }
+     logtofile("calling ETHWAN_DEF_INTF_NAME in GetWan_InterfaceName\n");
+        logtofile(ETHWAN_DEF_INTF_NAME);
 
-    strncpy (wanoe_ifacename,wanoe_ifname,length);
+
+    //char wanoe_ifname[WANOE_IFACENAME_LENGTH] = {0};
+    strncpy(wanoe_ifacename,ETHWAN_DEF_INTF_NAME,length);	
+   //  snprintf(wanoe_ifacename,length,"%s",ETHWAN_DEF_INTF_NAME);
+
+
+#if 0
+     if (RETURN_OK != GWP_GetEthWanInterfaceName((unsigned char*)wanoe_ifname, sizeof(wanoe_ifname))) {
+        CcspTraceError(("[%s][%d] Failed to get wanoe interface name \n", __FUNCTION__, __LINE__));
+	snprintf(wanoe_ifacename,length,"%s",ETHWAN_DEF_INTF_NAME);
+#endif
+	logtofile("calling ETHWAN_DEF_INTF_NAME in GetWan_InterfaceName\n");
+	logtofile(wanoe_ifacename);
+
+
+
+
+
+
     return ANSC_STATUS_SUCCESS;
 }
 
