@@ -1,4 +1,4 @@
-/*
+ETHWAN_DEF_INTF_NAME/*
  * If not stated otherwise in this file or this component's Licenses.txt file the
  * following copyright and licenses apply:
  *
@@ -3487,7 +3487,7 @@ CosaDmlEthInit(
     {
        /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
         * RDKBACCL-896 */
-       strcpy(wanPhyName, "erouter0");
+       strcpy(wanPhyName, ETHWAN_DEF_INTF_NAME);
     }
     #ifdef CORE_NET_LIB
     libnet_status status;
@@ -3507,8 +3507,8 @@ CosaDmlEthInit(
         CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
     }
     #else
-    v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
-    v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
+    //v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
+    //v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
     v_secure_system("ifconfig %s up",wanPhyName);
     #endif
     #endif
