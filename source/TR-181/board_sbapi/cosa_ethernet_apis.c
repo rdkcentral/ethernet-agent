@@ -132,6 +132,7 @@ extern ANSC_HANDLE bus_handle;
 #define PSM_ETHMANAGER_CFG_COUNT  "dmsb.ethagent.ethifcount"
 #define PSM_ETHMANAGER_CFG_NAME   "dmsb.ethagent.if.%d.Name"
 #define PSM_CONFIG_ETH_WAN "dmsb.ethagent.config.wan"
+#define PSM_CONFIG_ETH_NUM "dmsb.ethagent.config.wan.num"
 #define PSM_ETHMANAGER_LAN_BRIDGE_PORT  "dmsb.ethagent.lanBridgePort"
 #define PSM_BRLAN0_ETH_MEMBERS    "dmsb.l2net.1.Members.Eth"
 #define BRLAN0_BRIDGE_INSTANCE    1
@@ -3056,15 +3057,24 @@ ANSC_STATUS update_eth_wan_interface_info()
 {
     char acPSMQuery[128] = {0};
     char acPSMValue[64]  = {0};
+	char acPSMNumVal[64]  = {0};
+	char acPSMNum[128]={0};
 
 
         snprintf(acPSMQuery, sizeof(acPSMQuery), PSM_CONFIG_ETH_WAN);
+	    snprintf(acPSMNum, sizeof(acPSMNum), PSM_CONFIG_ETH_NUM);
         if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMQuery, acPSMValue) )
         {
+			       if ( CCSP_SUCCESS == DmlEthGetPSMRecordValue(acPSMNum, acPSMNumVal) ) 
+				   {   
              		logtofile("valling update_eth_wan_interface_info\n");
-             snprintf(ETHWAN_DEF_INTF_NAME, sizeof(ETHWAN_DEF_INTF_NAME), "%s0", acPSMValue);
-	     logtofile(ETHWAN_DEF_INTF_NAME);
-            // return ANSC_STATUS_FAILURE;
+                    snprintf(ETHWAN_DEF_INTF_NAME, sizeof(ETHWAN_DEF_INTF_NAME), "%s%d", acPSMValue,acPSMNumVal);
+	                logtofile(ETHWAN_DEF_INTF_NAME);
+                     // return ANSC_STATUS_FAILURE;
+				   }
+			       else
+					   CcspTraceError(("Failed to get %s\n", acPSMQuery));
+					   
         } else
         {
             CcspTraceError(("Failed to get %s\n", acPSMQuery));
