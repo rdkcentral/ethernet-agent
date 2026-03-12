@@ -885,7 +885,6 @@ INT CosaDmlEth_AssociatedDevice_callback(eth_device_t *eth_dev)
     CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, eth_dev->eth_devTxRate));
     CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, eth_dev->eth_devRxRate));
     CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, eth_dev->eth_Active ? "TRUE" : "FALSE"));
-	CcspTraceInfo(("%s:total_eth_device      : %d\n", __FUNCTION__, total_eth_device));
 	
 	    AnscCopyMemory(Eth_Host.eth_macAddr,eth_dev->eth_devMacAddress,6);
         Eth_Host.eth_Active = eth_dev->eth_Active;
