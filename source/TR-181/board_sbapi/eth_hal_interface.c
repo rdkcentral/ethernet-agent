@@ -401,6 +401,21 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 
 		CcspTraceInfo(("ETH_API_CHECK: %s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%ld, isDeleteAllDone:%d\n", 
 			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
+
+			CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", __FUNCTION__,
+           pstRecvEthDevice->eth_devMacAddress[0],
+           pstRecvEthDevice->eth_devMacAddress[1],
+           pstRecvEthDevice->eth_devMacAddress[2],
+           pstRecvEthDevice->eth_devMacAddress[3],
+           pstRecvEthDevice->eth_devMacAddress[4],
+           pstRecvEthDevice->eth_devMacAddress[5]));
+
+    CcspTraceInfo(("%s:Port        : %d\n", __FUNCTION__, pstRecvEthDevice->eth_port));
+    CcspTraceInfo(("%s:VLAN ID     : %d\n", __FUNCTION__, pstRecvEthDevice->eth_vlanid));
+    CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, pstRecvEthDevice->eth_devTxRate));
+    CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, pstRecvEthDevice->eth_devRxRate));
+    CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, pstRecvEthDevice->eth_Active ? "TRUE" : "FALSE"));
+		
 		if( bProcessFurther )
 		{
 			/* 
