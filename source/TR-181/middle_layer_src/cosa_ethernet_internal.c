@@ -568,7 +568,7 @@ void Ethernet_Log(void)
     CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, output_struct->eth_devTxRate));
     CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, output_struct->eth_devRxRate));
     CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, output_struct->eth_Active ? "TRUE" : "FALSE"));
-	CcspTraceInfo(("%s:total_eth_device      : %d\n", __FUNCTION__, total_eth_device));
+	CcspTraceInfo(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
 	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
@@ -771,7 +771,7 @@ static void EthTelemetryPush()
     CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, output_struct->eth_devTxRate));
     CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, output_struct->eth_devRxRate));
     CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, output_struct->eth_Active ? "TRUE" : "FALSE"));
-	CcspTraceInfo(("%s:total_eth_device      : %d\n", __FUNCTION__, total_eth_device));
+	CcspTraceInfo(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
 	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
