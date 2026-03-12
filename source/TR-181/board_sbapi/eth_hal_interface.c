@@ -380,7 +380,7 @@ void CcspHalExtSw_SendNotificationForAllHosts( void )
 void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 {
     UNREFERENCED_PARAMETER(arg);
-	CcspTraceError(("ETH_API_CHECK: %s:%d Entered to monitor thread\n", __FUNCTION__, __LINE__));
+	CcspTraceInfo(("ETH_API_CHECK: %s:%d Entered to monitor thread\n", __FUNCTION__, __LINE__));
 	//Monitor Associated Devices based on periodical time
     while( 1 )
     {
@@ -399,7 +399,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceError(("ETH_API_CHECK: %s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%ld, isDeleteAllDone:%d\n", 
+		CcspTraceInfo(("ETH_API_CHECK: %s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%ld, isDeleteAllDone:%d\n", 
 			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
 		if( bProcessFurther )
 		{
@@ -466,29 +466,32 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						pstRecvEthDevice[ iLoopCount ].eth_devMacAddress[4],
 						pstRecvEthDevice[ iLoopCount ].eth_devMacAddress[5]
 					);
+					CcspTraceInfo(("ETH_API_CHECK: %s:%d tmp_mac_id: %s", __FUNCTION__, __LINE__, tmp_mac_id));
 
 					// If valid then it will return 1
 					// If invalid then it will return 0
 					if( 0 == ValidateClient( tmp_mac_id ) )
 					{
                                            //Delete and send notification
-						CcspTraceError(("ETH_API_CHECK: %s:%d Delete and send notification", __FUNCTION__, __LINE__));
+						CcspTraceInfo(("ETH_API_CHECK: %s:%d Delete and send notification", __FUNCTION__, __LINE__));
                                            CcspHalExtSw_DeleteHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					   continue;
+					} else {
+						CcspTraceInfo(("ETH_API_CHECK: %s:%d valid tmp_mac_id: %s", __FUNCTION__, __LINE__, tmp_mac_id));
 					}
 				
 					// If found then it will give host address 
 					// If not found then it will give NULL value
-					CcspTraceError(("ETH_API_CHECK: %s:%d find host", __FUNCTION__, __LINE__));
+					CcspTraceInfo(("ETH_API_CHECK: %s:%d find host", __FUNCTION__, __LINE__));
 					if ( NULL == CcspHalExtSw_FindHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, NULL ) )
 					{
 						//Add and send notification  
-						CcspTraceError(("ETH_API_CHECK: %s:%d Add and send notification", __FUNCTION__, __LINE__));
+						CcspTraceInfo(("ETH_API_CHECK: %s:%d Add and send notification", __FUNCTION__, __LINE__));
 						CcspHalExtSw_AddHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 
 					//Add in temp hash list and Don't send notification  
-					CcspTraceError(("ETH_API_CHECK: %s:%d add in temp hash list and don't send notification", __FUNCTION__, __LINE__));
+					CcspTraceInfo(("ETH_API_CHECK: %s:%d add in temp hash list and don't send notification", __FUNCTION__, __LINE__));
 					CcspHalExtSw_AddHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayTempList, FALSE );
 				}
 
@@ -506,13 +509,13 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						)
 					{
 						//Delete and Need to send notification	 
-						CcspTraceError(("ETH_API_CHECK: %s:%d Delete and need to send notification", __FUNCTION__, __LINE__));
+						CcspTraceInfo(("ETH_API_CHECK: %s:%d Delete and need to send notification", __FUNCTION__, __LINE__));
 						CcspHalExtSw_DeleteHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 				}
 
 				//Delete all hosts from temp hash list
-				CcspTraceError(("ETH_API_CHECK: %s:%d Delete all hosts", __FUNCTION__, __LINE__));
+				CcspTraceInfo(("ETH_API_CHECK: %s:%d Delete all hosts", __FUNCTION__, __LINE__));
 				CcspHalExtSw_DeleteAllHosts( eth_device_hashArrayTempList, FALSE );
 
 				CcspTraceInfo(("<EthMonThrd> - Host(-) Loop End\n") );
@@ -534,7 +537,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 #ifndef _SR213_PRODUCT_REQ_
 void CcspHalExtSw_ethAssociatedDevice_callback_register(CcspHalExtSw_ethAssociatedDevice_callback callback_proc)
 {	
-	CcspTraceError(("ETH_API_CHECK: %s:%d Entered to create a thread\n", __FUNCTION__, __LINE__));
+	CcspTraceInfo(("ETH_API_CHECK: %s:%d Entered to create a thread\n", __FUNCTION__, __LINE__));
     AssociatedDevice_callback = callback_proc;
     pthread_t GetAssociatedDeviceThread;
     pthread_create(&GetAssociatedDeviceThread, NULL, &CcspHalExtSw_AssociatedDeviceMonitorThread, NULL);  
