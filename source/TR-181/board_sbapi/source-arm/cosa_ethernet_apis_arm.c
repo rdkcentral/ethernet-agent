@@ -709,7 +709,7 @@ CosaDmlEthPortGetClientMac
     CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, output_struct->eth_devTxRate));
     CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, output_struct->eth_devRxRate));
     CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, output_struct->eth_Active ? "TRUE" : "FALSE"));
-	 CcspTraceInfo(("%s:total_eth_device      : %d\n", __FUNCTION__, total_eth_device));
+	 CcspTraceInfo(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
    
         if ( total_eth_device )
         {
