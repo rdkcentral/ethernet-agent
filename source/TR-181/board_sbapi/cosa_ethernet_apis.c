@@ -871,20 +871,12 @@ INT CosaDmlEth_AssociatedDevice_callback(eth_device_t *eth_dev)
         CcspTraceWarning(("<EthCB> mac:%s stat:%s\n",
 										mac_id,
 										(eth_dev->eth_Active) ? "Connected" : "Disconnected" ));
-
-   CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", __FUNCTION__,
-           eth_dev->eth_devMacAddress[0],
-           eth_dev->eth_devMacAddress[1],
-           eth_dev->eth_devMacAddress[2],
-           eth_dev->eth_devMacAddress[3],
-           eth_dev->eth_devMacAddress[4],
-           eth_dev->eth_devMacAddress[5]));
-
-    CcspTraceInfo(("%s:Port        : %d\n", __FUNCTION__, eth_dev->eth_port));
-    CcspTraceInfo(("%s:VLAN ID     : %d\n", __FUNCTION__, eth_dev->eth_vlanid));
-    CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, eth_dev->eth_devTxRate));
-    CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, eth_dev->eth_devRxRate));
-    CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, eth_dev->eth_Active ? "TRUE" : "FALSE"));
+	if (eth_dev != NULL) {
+        CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
+               eth_dev->eth_devMacAddress[0], eth_dev->eth_devMacAddress[1], eth_dev->eth_devMacAddress[2], eth_dev->eth_devMacAddress[3],
+               eth_dev->eth_devMacAddress[4], eth_dev->eth_devMacAddress[5], eth_dev->eth_port, eth_dev->eth_vlanid, eth_dev->eth_devTxRate
+	           eth_dev->eth_devRxRate, eth_dev->eth_Active ? "TRUE" : "FALSE"));
+	}
 	
 	    AnscCopyMemory(Eth_Host.eth_macAddr,eth_dev->eth_devMacAddress,6);
         Eth_Host.eth_Active = eth_dev->eth_Active;
