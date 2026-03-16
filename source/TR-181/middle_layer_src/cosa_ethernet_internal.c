@@ -566,7 +566,7 @@ void Ethernet_Log(void)
     for (i = 1; i <= total_port; i++)
     {
         count_client = ethGetClientsCount(i, total_eth_device, output_struct);
-        CcspTraceInfo(("ETH_MAC_%d_TOTAL_COUNT:%d\n", i, count_client));
+        CcspTraceDebug(("ETH_MAC_%d_TOTAL_COUNT:%d\n", i, count_client));
         if (count_client)
         {
             mem_size = (LENGTH_MAC_ADDRESS + LENGTH_DELIMITER) * count_client;
@@ -580,8 +580,8 @@ void Ethernet_Log(void)
                         count_client,
                         mac_address,
                         mem_size );
-                CcspTraceInfo(("ETH_MAC_%d:%s\n", i, mac_address));
-                CcspTraceInfo(("ETH_PHYRATE_%d:%d\n", i, ethGetPHYRate(i)));
+                CcspTraceDebug(("ETH_MAC_%d:%s\n", i, mac_address));
+                CcspTraceDebug(("ETH_PHYRATE_%d:%d\n", i, ethGetPHYRate(i)));
 
                 AnscFreeMemory(mac_address);
                 mac_address= NULL;
