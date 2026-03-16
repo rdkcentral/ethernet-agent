@@ -380,7 +380,7 @@ void CcspHalExtSw_SendNotificationForAllHosts( void )
 void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 {
     UNREFERENCED_PARAMETER(arg);
-	CcspTraceInfo(("ETH_API_CHECK: %s:%d Entered to monitor thread\n", __FUNCTION__, __LINE__));
+	CcspTraceDebug(("%s:%d Entered to monitor thread\n", __FUNCTION__, __LINE__));
 	//Monitor Associated Devices based on periodical time
     while( 1 )
     {
@@ -391,7 +391,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 		static BOOL   isDeleteAllDone	 	= FALSE;
 
 
-		CcspTraceInfo(("ETH_API_CHECK: <EthMonThrd> Iteration Start\n") );
+		CcspTraceDebug(("<EthMonThrd> Iteration Start\n") );
 		//Get Associated Device Details from HAL. Do nothing if failure case
 		if(-1 == CcspHalExtSw_getAssociatedDevice( &ulTotalEthDeviceCount, &pstRecvEthDevice ))
 		{
@@ -399,25 +399,17 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceInfo(("ETH_API_CHECK: %s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%ld, isDeleteAllDone:%d\n", 
+		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%ld, isDeleteAllDone:%d\n", 
 			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
-
-			CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", __FUNCTION__,
-           pstRecvEthDevice->eth_devMacAddress[0],
-           pstRecvEthDevice->eth_devMacAddress[1],
-           pstRecvEthDevice->eth_devMacAddress[2],
-           pstRecvEthDevice->eth_devMacAddress[3],
-           pstRecvEthDevice->eth_devMacAddress[4],
-           pstRecvEthDevice->eth_devMacAddress[5]));
-
-    CcspTraceInfo(("%s:Port        : %d\n", __FUNCTION__, pstRecvEthDevice->eth_port));
-    CcspTraceInfo(("%s:VLAN ID     : %d\n", __FUNCTION__, pstRecvEthDevice->eth_vlanid));
-    CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, pstRecvEthDevice->eth_devTxRate));
-    CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, pstRecvEthDevice->eth_devRxRate));
-    CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, pstRecvEthDevice->eth_Active ? "TRUE" : "FALSE"));
 		
 		if( bProcessFurther )
 		{
+			CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__, 
+				pstRecvEthDevice->eth_devMacAddress[0], pstRecvEthDevice->eth_devMacAddress[1], pstRecvEthDevice->eth_devMacAddress[2],
+				pstRecvEthDevice->eth_devMacAddress[3], pstRecvEthDevice->eth_devMacAddress[4], pstRecvEthDevice->eth_devMacAddress[5], 
+				pstRecvEthDevice->eth_port, pstRecvEthDevice->eth_vlanid, pstRecvEthDevice->eth_devTxRate, pstRecvEthDevice->eth_devRxRate,
+				pstRecvEthDevice->eth_Active ? "TRUE" : "FALSE"));
+
 			/* 
 			  * Handle Notification based on Add or Delete cases
 			  * -----------------------------------------
@@ -459,7 +451,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 
 			if( bProcessFurther )
 			{
-				CcspTraceInfo(("<EthMonThrd> - Host(+) Loop Start\n") );
+				CcspTraceDebug(("<EthMonThrd> - Host(+) Loop Start\n") );
 
 				// Reset isDeleteAllDone variable to proceed further from next iteration
 				isDeleteAllDone = FALSE;
@@ -481,38 +473,38 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						pstRecvEthDevice[ iLoopCount ].eth_devMacAddress[4],
 						pstRecvEthDevice[ iLoopCount ].eth_devMacAddress[5]
 					);
-					CcspTraceInfo(("ETH_API_CHECK: %s:%d tmp_mac_id: %s", __FUNCTION__, __LINE__, tmp_mac_id));
+					CcspTraceDebug(("%s:%d tmp_mac_id: %s", __FUNCTION__, __LINE__, tmp_mac_id));
 
 					// If valid then it will return 1
 					// If invalid then it will return 0
 					if( 0 == ValidateClient( tmp_mac_id ) )
 					{
                                            //Delete and send notification
-						CcspTraceInfo(("ETH_API_CHECK: %s:%d Delete and send notification", __FUNCTION__, __LINE__));
+						CcspTraceDebug(("%s:%d Delete and send notification", __FUNCTION__, __LINE__));
                                            CcspHalExtSw_DeleteHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					   continue;
 					} else {
-						CcspTraceInfo(("ETH_API_CHECK: %s:%d valid tmp_mac_id: %s", __FUNCTION__, __LINE__, tmp_mac_id));
+						CcspTraceDebug(("%s:%d valid tmp_mac_id: %s", __FUNCTION__, __LINE__, tmp_mac_id));
 					}
 				
 					// If found then it will give host address 
 					// If not found then it will give NULL value
-					CcspTraceInfo(("ETH_API_CHECK: %s:%d find host", __FUNCTION__, __LINE__));
+					CcspTraceDebug(("%s:%d find host", __FUNCTION__, __LINE__));
 					if ( NULL == CcspHalExtSw_FindHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, NULL ) )
 					{
 						//Add and send notification  
-						CcspTraceInfo(("ETH_API_CHECK: %s:%d Add and send notification", __FUNCTION__, __LINE__));
+						CcspTraceDebug(("%s:%d Add and send notification", __FUNCTION__, __LINE__));
 						CcspHalExtSw_AddHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 
 					//Add in temp hash list and Don't send notification  
-					CcspTraceInfo(("ETH_API_CHECK: %s:%d add in temp hash list and don't send notification", __FUNCTION__, __LINE__));
+					CcspTraceDebug(("%s:%d add in temp hash list and don't send notification", __FUNCTION__, __LINE__));
 					CcspHalExtSw_AddHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayTempList, FALSE );
 				}
 
-				CcspTraceInfo(("<EthMonThrd> - Host(+) Loop End\n") );
+				CcspTraceDebug(("<EthMonThrd> - Host(+) Loop End\n") );
 
-				CcspTraceInfo(("<EthMonThrd> - Host(-) Loop Start\n") );
+				CcspTraceDebug(("<EthMonThrd> - Host(-) Loop Start\n") );
 
 				//Disconnection Case
 				for( iLoopCount = 0; iLoopCount< ETH_NODE_HASH_SIZE; iLoopCount++ ) 
@@ -524,16 +516,16 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						)
 					{
 						//Delete and Need to send notification	 
-						CcspTraceInfo(("ETH_API_CHECK: %s:%d Delete and need to send notification", __FUNCTION__, __LINE__));
+						CcspTraceDebug(("%s:%d Delete and need to send notification", __FUNCTION__, __LINE__));
 						CcspHalExtSw_DeleteHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 				}
 
 				//Delete all hosts from temp hash list
-				CcspTraceInfo(("ETH_API_CHECK: %s:%d Delete all hosts", __FUNCTION__, __LINE__));
+				CcspTraceDebug(("%s:%d Delete all hosts", __FUNCTION__, __LINE__));
 				CcspHalExtSw_DeleteAllHosts( eth_device_hashArrayTempList, FALSE );
 
-				CcspTraceInfo(("<EthMonThrd> - Host(-) Loop End\n") );
+				CcspTraceDebug(("<EthMonThrd> - Host(-) Loop End\n") );
 			}
 			//Free if memory is valid case
 			if( NULL != pstRecvEthDevice )
@@ -543,7 +535,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			}
 		}
 
-		CcspTraceInfo(("<EthMonThrd> Iteration End\n") );
+		CcspTraceDebug(("<EthMonThrd> Iteration End\n") );
 		
 		//Sleep
     	sleep( ETH_POLLING_PERIOD );
@@ -552,7 +544,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 #ifndef _SR213_PRODUCT_REQ_
 void CcspHalExtSw_ethAssociatedDevice_callback_register(CcspHalExtSw_ethAssociatedDevice_callback callback_proc)
 {	
-	CcspTraceInfo(("ETH_API_CHECK: %s:%d Entered to create a thread\n", __FUNCTION__, __LINE__));
+	CcspTraceDebug(("%s:%d Entered to create a thread\n", __FUNCTION__, __LINE__));
     AssociatedDevice_callback = callback_proc;
     pthread_t GetAssociatedDeviceThread;
     pthread_create(&GetAssociatedDeviceThread, NULL, &CcspHalExtSw_AssociatedDeviceMonitorThread, NULL);  
