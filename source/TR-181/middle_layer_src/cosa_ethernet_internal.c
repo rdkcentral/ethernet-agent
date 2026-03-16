@@ -555,20 +555,12 @@ void Ethernet_Log(void)
         return;
     }
 
-   CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", __FUNCTION__,
-           output_struct->eth_devMacAddress[0],
-           output_struct->eth_devMacAddress[1],
-           output_struct->eth_devMacAddress[2],
-           output_struct->eth_devMacAddress[3],
-           output_struct->eth_devMacAddress[4],
-           output_struct->eth_devMacAddress[5]));
-
-    CcspTraceInfo(("%s:Port        : %d\n", __FUNCTION__, output_struct->eth_port));
-    CcspTraceInfo(("%s:VLAN ID     : %d\n", __FUNCTION__, output_struct->eth_vlanid));
-    CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, output_struct->eth_devTxRate));
-    CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, output_struct->eth_devRxRate));
-    CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, output_struct->eth_Active ? "TRUE" : "FALSE"));
-	CcspTraceInfo(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
+   	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
+    CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__, 
+		   output_struct->eth_devMacAddress[0], output_struct->eth_devMacAddress[1], output_struct->eth_devMacAddress[2],
+           output_struct->eth_devMacAddress[3], output_struct->eth_devMacAddress[4], output_struct->eth_devMacAddress[5]
+		   output_struct->eth_port, output_struct->eth_vlanid, output_struct->eth_devTxRate, output_struct->eth_devRxRate,
+		   output_struct->eth_Active ? "TRUE" : "FALSE"));
 	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
@@ -758,20 +750,12 @@ static void EthTelemetryPush()
         return;
     }
 
-   CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", __FUNCTION__,
-           output_struct->eth_devMacAddress[0],
-           output_struct->eth_devMacAddress[1],
-           output_struct->eth_devMacAddress[2],
-           output_struct->eth_devMacAddress[3],
-           output_struct->eth_devMacAddress[4],
-           output_struct->eth_devMacAddress[5]));
-
-    CcspTraceInfo(("%s:Port        : %d\n", __FUNCTION__, output_struct->eth_port));
-    CcspTraceInfo(("%s:VLAN ID     : %d\n", __FUNCTION__, output_struct->eth_vlanid));
-    CcspTraceInfo(("%s:TX Rate     : %d\n", __FUNCTION__, output_struct->eth_devTxRate));
-    CcspTraceInfo(("%s:RX Rate     : %d\n", __FUNCTION__, output_struct->eth_devRxRate));
-    CcspTraceInfo(("%s:Active      : %s\n", __FUNCTION__, output_struct->eth_Active ? "TRUE" : "FALSE"));
-	CcspTraceInfo(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
+	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
+    CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__, 
+		   output_struct->eth_devMacAddress[0], output_struct->eth_devMacAddress[1], output_struct->eth_devMacAddress[2],
+           output_struct->eth_devMacAddress[3], output_struct->eth_devMacAddress[4], output_struct->eth_devMacAddress[5]
+		   output_struct->eth_port, output_struct->eth_vlanid, output_struct->eth_devTxRate, output_struct->eth_devRxRate,
+		   output_struct->eth_Active ? "TRUE" : "FALSE"));
 	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
