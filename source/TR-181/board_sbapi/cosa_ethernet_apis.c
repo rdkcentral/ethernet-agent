@@ -874,7 +874,7 @@ INT CosaDmlEth_AssociatedDevice_callback(eth_device_t *eth_dev)
 	if (eth_dev != NULL) {
         CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
                eth_dev->eth_devMacAddress[0], eth_dev->eth_devMacAddress[1], eth_dev->eth_devMacAddress[2], eth_dev->eth_devMacAddress[3],
-               eth_dev->eth_devMacAddress[4], eth_dev->eth_devMacAddress[5], eth_dev->eth_port, eth_dev->eth_vlanid, eth_dev->eth_devTxRate
+               eth_dev->eth_devMacAddress[4], eth_dev->eth_devMacAddress[5], eth_dev->eth_port, eth_dev->eth_vlanid, eth_dev->eth_devTxRate,
 	           eth_dev->eth_devRxRate, eth_dev->eth_Active ? "TRUE" : "FALSE"));
 	}
 	
