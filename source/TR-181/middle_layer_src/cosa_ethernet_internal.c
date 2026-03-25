@@ -557,7 +557,7 @@ void Ethernet_Log(void)
 
    	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
     for (int iLoopCount = 0; iLoopCount < (int) total_eth_device; iLoopCount++) {
-             CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
+             CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
                    output_struct[iLoopCount].eth_devMacAddress[0], output_struct[iLoopCount].eth_devMacAddress[1],
                    output_struct[iLoopCount].eth_devMacAddress[2], output_struct[iLoopCount].eth_devMacAddress[3],
                    output_struct[iLoopCount].eth_devMacAddress[4], output_struct[iLoopCount].eth_devMacAddress[5],
@@ -756,7 +756,7 @@ static void EthTelemetryPush()
 
 	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
     for (int iLoopCount = 0; iLoopCount < (int) total_eth_device; iLoopCount++) {
-             CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
+             CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
                    output_struct[iLoopCount].eth_devMacAddress[0], output_struct[iLoopCount].eth_devMacAddress[1],
                    output_struct[iLoopCount].eth_devMacAddress[2], output_struct[iLoopCount].eth_devMacAddress[3],
                    output_struct[iLoopCount].eth_devMacAddress[4], output_struct[iLoopCount].eth_devMacAddress[5],
