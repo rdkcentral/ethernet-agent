@@ -454,7 +454,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				{ 
 					char tmp_mac_id[ 18 ];
 
-					CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n",
+					CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n",
                                            __FUNCTION__, pstRecvEthDevice[iLoopCount].eth_devMacAddress[0],
                                            pstRecvEthDevice[iLoopCount].eth_devMacAddress[1], pstRecvEthDevice[iLoopCount].eth_devMacAddress[2],
                                            pstRecvEthDevice[iLoopCount].eth_devMacAddress[3], pstRecvEthDevice[iLoopCount].eth_devMacAddress[4],
