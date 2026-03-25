@@ -404,12 +404,6 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 		
 		if( bProcessFurther )
 		{
-			CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__, 
-				pstRecvEthDevice->eth_devMacAddress[0], pstRecvEthDevice->eth_devMacAddress[1], pstRecvEthDevice->eth_devMacAddress[2],
-				pstRecvEthDevice->eth_devMacAddress[3], pstRecvEthDevice->eth_devMacAddress[4], pstRecvEthDevice->eth_devMacAddress[5], 
-				pstRecvEthDevice->eth_port, pstRecvEthDevice->eth_vlanid, pstRecvEthDevice->eth_devTxRate, pstRecvEthDevice->eth_devRxRate,
-				pstRecvEthDevice->eth_Active ? "TRUE" : "FALSE"));
-
 			/* 
 			  * Handle Notification based on Add or Delete cases
 			  * -----------------------------------------
@@ -459,6 +453,14 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
 				{ 
 					char tmp_mac_id[ 18 ];
+
+					CcspTraceInfo(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n",
+                                           __FUNCTION__, pstRecvEthDevice[iLoopCount].eth_devMacAddress[0],
+                                           pstRecvEthDevice[iLoopCount].eth_devMacAddress[1], pstRecvEthDevice[iLoopCount].eth_devMacAddress[2],
+                                           pstRecvEthDevice[iLoopCount].eth_devMacAddress[3], pstRecvEthDevice[iLoopCount].eth_devMacAddress[4],
+                                           pstRecvEthDevice[iLoopCount].eth_devMacAddress[5], pstRecvEthDevice[iLoopCount].eth_port,
+                                           pstRecvEthDevice[iLoopCount].eth_vlanid, pstRecvEthDevice[iLoopCount].eth_devTxRate,
+                                           pstRecvEthDevice[iLoopCount].eth_devRxRate, pstRecvEthDevice[iLoopCount].eth_Active ? "TRUE" : "FALSE"));
 				
 					//MAC Conversion
 					snprintf
