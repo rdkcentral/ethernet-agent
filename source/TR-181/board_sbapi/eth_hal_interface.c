@@ -399,7 +399,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%ld, isDeleteAllDone:%d\n", 
+		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu, isDeleteAllDone:%d\n", 
 			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
 		
 		if( bProcessFurther )
