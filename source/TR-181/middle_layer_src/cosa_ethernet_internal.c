@@ -554,23 +554,12 @@ void Ethernet_Log(void)
     {
         return;
     }
-
-   	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
-    for (int iLoopCount = 0; iLoopCount < (int) total_eth_device; iLoopCount++) {
-             CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
-                   output_struct[iLoopCount].eth_devMacAddress[0], output_struct[iLoopCount].eth_devMacAddress[1],
-                   output_struct[iLoopCount].eth_devMacAddress[2], output_struct[iLoopCount].eth_devMacAddress[3],
-                   output_struct[iLoopCount].eth_devMacAddress[4], output_struct[iLoopCount].eth_devMacAddress[5],
-                   output_struct[iLoopCount].eth_port, output_struct[iLoopCount].eth_vlanid, output_struct[iLoopCount].eth_devTxRate,
-                   output_struct[iLoopCount].eth_devRxRate, output_struct[iLoopCount].eth_Active ? "TRUE" : "FALSE"));
-    }
-
 	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
     {
         count_client = ethGetClientsCount(i, total_eth_device, output_struct);
-        CcspTraceDebug(("ETH_MAC_%d_TOTAL_COUNT:%d\n", i, count_client));
+        CcspTraceWarning(("ETH_MAC_%d_TOTAL_COUNT:%d\n", i, count_client));
         if (count_client)
         {
             mem_size = (LENGTH_MAC_ADDRESS + LENGTH_DELIMITER) * count_client;
@@ -584,8 +573,8 @@ void Ethernet_Log(void)
                         count_client,
                         mac_address,
                         mem_size );
-                CcspTraceDebug(("ETH_MAC_%d:%s\n", i, mac_address));
-                CcspTraceDebug(("ETH_PHYRATE_%d:%d\n", i, ethGetPHYRate(i)));
+                CcspTraceWarning(("ETH_MAC_%d:%s\n", i, mac_address));
+                CcspTraceWarning(("ETH_PHYRATE_%d:%d\n", i, ethGetPHYRate(i)));
 
                 AnscFreeMemory(mac_address);
                 mac_address= NULL;
@@ -753,17 +742,6 @@ static void EthTelemetryPush()
     if (ANSC_STATUS_SUCCESS != ret) {
         return;
     }
-
-	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
-    for (int iLoopCount = 0; iLoopCount < (int) total_eth_device; iLoopCount++) {
-             CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
-                   output_struct[iLoopCount].eth_devMacAddress[0], output_struct[iLoopCount].eth_devMacAddress[1],
-                   output_struct[iLoopCount].eth_devMacAddress[2], output_struct[iLoopCount].eth_devMacAddress[3],
-                   output_struct[iLoopCount].eth_devMacAddress[4], output_struct[iLoopCount].eth_devMacAddress[5],
-                   output_struct[iLoopCount].eth_port, output_struct[iLoopCount].eth_vlanid, output_struct[iLoopCount].eth_devTxRate,
-                   output_struct[iLoopCount].eth_devRxRate, output_struct[iLoopCount].eth_Active ? "TRUE" : "FALSE"));
-    }
-
 	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
