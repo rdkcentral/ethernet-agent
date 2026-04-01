@@ -696,17 +696,6 @@ CosaDmlEthPortGetClientMac
         return ret;
     }
 
-	CcspTraceDebug(("%s:total_eth_device      : %lu\n", __FUNCTION__, total_eth_device));
-    for (int iLoopCount = 0; iLoopCount < (int) total_eth_device; iLoopCount++) {
-         CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n", __FUNCTION__,
-                   output_struct[iLoopCount].eth_devMacAddress[0], output_struct[iLoopCount].eth_devMacAddress[1],
-                   output_struct[iLoopCount].eth_devMacAddress[2], output_struct[iLoopCount].eth_devMacAddress[3],
-                   output_struct[iLoopCount].eth_devMacAddress[4], output_struct[iLoopCount].eth_devMacAddress[5],
-                   output_struct[iLoopCount].eth_port, output_struct[iLoopCount].eth_vlanid, output_struct[iLoopCount].eth_devTxRate,
-                   output_struct[iLoopCount].eth_devRxRate, output_struct[iLoopCount].eth_Active ? "TRUE" : "FALSE"));
-    }
-
-   
         if ( total_eth_device )
         {
            ULONG i = 1;
