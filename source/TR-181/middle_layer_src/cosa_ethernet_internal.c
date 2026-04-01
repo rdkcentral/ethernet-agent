@@ -554,7 +554,6 @@ void Ethernet_Log(void)
     {
         return;
     }
-	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
     {
