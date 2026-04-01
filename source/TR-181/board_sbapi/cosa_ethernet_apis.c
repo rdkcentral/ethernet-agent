@@ -856,7 +856,6 @@ INT CosaDmlEth_AssociatedDevice_callback(eth_device_t *eth_dev)
 	Eth_host_t Eth_Host;
     char mac_id[18] = {0};
     BOOL bridgeId = FALSE;
-	
     sprintf
     (
         mac_id,
