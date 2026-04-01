@@ -741,7 +741,6 @@ static void EthTelemetryPush()
     if (ANSC_STATUS_SUCCESS != ret) {
         return;
     }
-	
     //Port number start from 1
     for (i = 1; i <= total_port; i++)
     {
