@@ -24,6 +24,7 @@
 #include "ccsp_hal_ethsw.h"
 #include "safec_lib_common.h"
 #include "secure_wrapper.h"
+#include <syscfg/syscfg.h>
 
 #define ARP_CACHE "/tmp/arp.txt"
 #ifndef _SR213_PRODUCT_REQ_
@@ -449,6 +450,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
 				{ 
 					char tmp_mac_id[ 18 ];
+					char dev_Mode[20] = {0};
 				
 					//MAC Conversion
 					snprintf
@@ -466,11 +468,15 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 
 					// If valid then it will return 1
 					// If invalid then it will return 0
-					if( 0 == ValidateClient( tmp_mac_id ) )
+					syscfg_get(NULL, "Device_Mode", dev_Mode, sizeof(dev_Mode));
+					if (atoi(dev_Mode) == 0)
 					{
+					    if( 0 == ValidateClient( tmp_mac_id ) )
+					    {
                                            //Delete and send notification
                                            CcspHalExtSw_DeleteHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
-					   continue;
+					       continue;
+					    }
 					}
 				
 					// If found then it will give host address 
