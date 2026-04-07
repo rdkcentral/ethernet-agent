@@ -546,7 +546,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 #ifndef _SR213_PRODUCT_REQ_
 void CcspHalExtSw_ethAssociatedDevice_callback_register(CcspHalExtSw_ethAssociatedDevice_callback callback_proc)
 {	
-	CcspTraceDebug(("%s:%d Entered to create a thread\n", __FUNCTION__, __LINE__));
+	CcspTraceDebug(("%s:%d Creating monitor thread\n", __FUNCTION__, __LINE__));
     AssociatedDevice_callback = callback_proc;
     pthread_t GetAssociatedDeviceThread;
     pthread_create(&GetAssociatedDeviceThread, NULL, &CcspHalExtSw_AssociatedDeviceMonitorThread, NULL);  
