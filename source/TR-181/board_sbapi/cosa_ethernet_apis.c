@@ -3465,7 +3465,7 @@ CosaDmlEthInit(
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
-    sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
+    sysevent_get(sysevent_fd, sysevent_token, "current_wan_ifname", out_value, sizeof(out_value));
     if (out_value[0] != '\0')
     {
        strcpy(wanPhyName, out_value);
