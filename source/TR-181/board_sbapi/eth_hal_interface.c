@@ -24,6 +24,7 @@
 #include "ccsp_hal_ethsw.h"
 #include "safec_lib_common.h"
 #include "secure_wrapper.h"
+#include <syscfg/syscfg.h>
 
 #define ARP_CACHE "/tmp/arp.txt"
 #ifndef _SR213_PRODUCT_REQ_
@@ -453,15 +454,16 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
 				{ 
 					char tmp_mac_id[ 18 ];
-
+          char dev_Mode[20] = {0};
+					int mode = 0;
+          
 					CcspTraceDebug(("%s: MAC Address : %02X:%02X:%02X:%02X:%02X:%02X, Port:%d, VLAN ID:%d, TX Rate:%d, RX Rate:%d, Active:%s\n",
                                            __FUNCTION__, pstRecvEthDevice[iLoopCount].eth_devMacAddress[0],
                                            pstRecvEthDevice[iLoopCount].eth_devMacAddress[1], pstRecvEthDevice[iLoopCount].eth_devMacAddress[2],
                                            pstRecvEthDevice[iLoopCount].eth_devMacAddress[3], pstRecvEthDevice[iLoopCount].eth_devMacAddress[4],
                                            pstRecvEthDevice[iLoopCount].eth_devMacAddress[5], pstRecvEthDevice[iLoopCount].eth_port,
                                            pstRecvEthDevice[iLoopCount].eth_vlanid, pstRecvEthDevice[iLoopCount].eth_devTxRate,
-                                           pstRecvEthDevice[iLoopCount].eth_devRxRate, pstRecvEthDevice[iLoopCount].eth_Active ? "TRUE" : "FALSE"));
-				
+                                           pstRecvEthDevice[iLoopCount].eth_devRxRate, pstRecvEthDevice[iLoopCount].eth_Active ? "TRUE" : "FALSE"));			
 					//MAC Conversion
 					snprintf
 					(
@@ -477,16 +479,30 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 					);
 					CcspTraceDebug(("%s:%d tmp_mac_id: %s\n", __FUNCTION__, __LINE__, tmp_mac_id));
 
-					// If valid then it will return 1
-					// If invalid then it will return 0
-					if( 0 == ValidateClient( tmp_mac_id ) )
+					/* Get Device_Mode */
+					if ((syscfg_get(NULL, "Device_Mode", dev_Mode, sizeof(dev_Mode)) == 0) && (dev_Mode[0] != '\0'))
 					{
+						mode = atoi(dev_Mode);
+					}
+					else
+					{
+						mode = 0;
+					}
+
+					/* Validate client in non-extender mode only*/
+					if (mode != 1)
+					{
+						// If valid then it will return 1
+						// If invalid then it will return 0
+					    if( 0 == ValidateClient( tmp_mac_id ) )
+					    {
                                            //Delete and send notification
 						CcspTraceDebug(("%s:%d Delete and send notification\n", __FUNCTION__, __LINE__));
                                            CcspHalExtSw_DeleteHost( &pstRecvEthDevice[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					   continue;
-					} else {
-						CcspTraceDebug(("%s:%d valid tmp_mac_id: %s\n", __FUNCTION__, __LINE__, tmp_mac_id));
+					    } else {
+						      CcspTraceDebug(("%s:%d valid tmp_mac_id: %s\n", __FUNCTION__, __LINE__, tmp_mac_id));
+					    }
 					}
 				
 					// If found then it will give host address 
