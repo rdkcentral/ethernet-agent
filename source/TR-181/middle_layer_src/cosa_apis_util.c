@@ -1348,9 +1348,9 @@ int CosaUtilGetIpv6AddrInfo (char * ifname, ipv6_addr_info_t ** pp_info, int * p
     if (!fp){
         return -1;
     }
-    
+   /* CID 746317 : Out-of-bounds write (OVERRUN) */ 
 	while (fscanf
-		   (fp, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %20s\n",
+		   (fp, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %19s\n",
 			addr6p[0], addr6p[1], addr6p[2], addr6p[3], addr6p[4],
 			addr6p[5], addr6p[6], addr6p[7], &if_idx, &plen, &scope,
 			&dad_status, devname) != EOF
