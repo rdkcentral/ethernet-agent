@@ -42,7 +42,7 @@ graph LR
     CloudMgmt -->|WebConfig| ProtocolAgents
 
     %% Upper layer to Ethernet Agent
-    ProtocolAgents -->|RBus/DBUS| EthAgent
+    ProtocolAgents -->|R-BUS/DBUS| EthAgent
 
     %% Ethernet Agent to Other RDK-B Components
     EthAgent -->|Configuration| PSM
@@ -78,16 +78,16 @@ graph LR
 
 The Ethernet Agent employs a layered architecture design that separates interface abstraction, data model management, and platform integration concerns. The core design follows the RDK-B component pattern with a Service Provider (SSP) layer for process management, a middle layer for TR-181 data model implementation, and a board-specific abstraction layer for HAL integration. This design ensures maintainability while providing flexible deployment options across different hardware platforms.
 
-The component's architecture supports multiple operational modes through compile-time feature flags, enabling integration with either traditional WAN Agent architecture (FEATURE_RDKB_WAN_AGENT) or modern WAN Manager systems (FEATURE_RDKB_WAN_MANAGER). The design emphasizes event-driven communication patterns with other middleware components, utilizing RBus for inter-component messaging and HAL callbacks for hardware event processing.
+The component's architecture supports multiple operational modes through compile-time feature flags, enabling integration with either traditional WAN Agent architecture (FEATURE_RDKB_WAN_AGENT) or modern WAN Manager systems (FEATURE_RDKB_WAN_MANAGER). The design emphasizes event-driven communication patterns with other middleware components, utilizing R-BUS for inter-component messaging and HAL callbacks for hardware event processing.
 
-The data persistence strategy leverages the Persistent Storage Manager (PSM) for configuration storage while maintaining runtime state in memory for performance. The component implements a robust error handling and recovery mechanism with comprehensive logging for troubleshooting and system diagnostics. The threading model is primarily single-threaded with event-driven processing to ensure deterministic behavior and avoid race conditions in interface state management.
+The data persistence strategy leverages the Persistent Storage Manager (PSM) for configuration storage while maintaining runtime state in memory for performance. The component implements a robust error handling and recovery mechanism with comprehensive logging for troubleshooting and system diagnostics. The runtime architecture is event-driven but multi-threaded, with a main control path complemented by dedicated pthreads for responsibilities such as event handling, telemetry/logging, and state management. Interface state coordination is therefore designed to rely on clear thread ownership and synchronization rather than assuming single-threaded execution.
 
 ```mermaid
 graph TD
     subgraph EthAgentContainer ["Ethernet Agent Process (CcspEthAgent)"]
         subgraph SSP ["Service Provider Layer"]
             SSPMain[SSP Main Process]
-            MsgBusIntf[Message Bus Interface]
+            MsgBusIntf[R-BUS Interface]
             ServiceReg[Service Registration]
         end
         
@@ -95,7 +95,7 @@ graph TD
             EthDML[Ethernet DML Handler]
             InterfaceDML[Interface DML Handler]
             StatsModule[Statistics Module]
-            RBusHandler[RBus Event Handler]
+            R-BUSHandler[R-BUS Event Handler]
         end
         
         subgraph BoardAPI ["Board API Layer"]
@@ -117,15 +117,15 @@ graph TD
     
     EthDML --> InterfaceDML
     EthDML --> StatsModule
-    InterfaceDML --> RBusHandler
+    InterfaceDML --> R-BUSHandler
     
-    RBusHandler --> EthManager
+    R-BUSHandler --> EthManager
     EthManager --> HALInterface
     HALInterface --> ConfigMgr
     
     HALInterface -->|HAL API Calls| HAL
     ConfigMgr -->|PSM Get/Set| PSMStore
-    RBusHandler -->|RBus Events| WanMgrSvc
+    R-BUSHandler -->|R-BUS Events| WanMgrSvc
 
     classDef ssp fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
     classDef middle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
@@ -133,7 +133,7 @@ graph TD
     classDef external fill:#e8f5e8,stroke:#388e3c,stroke-width:2px;
     
     class SSPMain,MsgBusIntf,ServiceReg ssp;
-    class EthDML,InterfaceDML,StatsModule,RBusHandler middle;
+    class EthDML,InterfaceDML,StatsModule,R-BUSHandler middle;
     class EthManager,HALInterface,ConfigMgr board;
     class HAL,PSMStore,WanMgrSvc external;
 ```
@@ -142,34 +142,34 @@ graph TD
 
 **Build-Time Flags and Configuration:**
 
-| Configure Option | DISTRO Feature | Build Flag | Purpose | Default |
-|------------------|----------------|------------|---------|---------|
-| `--enable-wanfailover` | `WanFailOverSupportEnable` | `FEATURE_WAN_FAIL_OVER` | Enable WAN failover capabilities and RBus integration | Disabled |
-| `--enable-core_net_lib_feature_support` | `core-net-lib` | `CORE_NET_LIB` (must also be defined) | Enable linking against `-lnet`; code guarded by `#ifdef CORE_NET_LIB` additionally requires the `CORE_NET_LIB` compile-time macro to be defined | Disabled |
-| `--enable-dropearly` | N/A | `DROP_ROOT_EARLY` | Enable non-root execution by dropping root privileges early in process lifecycle | Disabled |
-| `--enable-notify` | N/A | `ENABLE_SD_NOTIFY` | Enable systemd service notification for process lifecycle management | Disabled |
-| `--enable-unitTestDockerSupport` | N/A | `UNIT_TEST_DOCKER_SUPPORT` | Enable Docker-based unit testing support with static function visibility | Disabled |
+| Configure Option | Build Flag | Purpose | Default |
+|------------------|------------|---------|---------|
+| `--enable-wanfailover` | `FEATURE_WAN_FAIL_OVER` | Enable WAN failover capabilities and R-BUS integration | Disabled |
+| `--enable-core_net_lib_feature_support` | `CORE_NET_LIB_FEATURE_SUPPORT` (Makefile), `CORE_NET_LIB` (code guard) | Enable linking against `-lnet` library. Sets `CORE_NET_LIB_FEATURE_SUPPORT` in Makefile for linking; code uses `#ifdef CORE_NET_LIB` which must be separately defined via CFLAGS | Disabled |
+| `--enable-dropearly` | `DROP_ROOT_EARLY` | Enable non-root execution by dropping root privileges early in process lifecycle | Disabled |
+| `--enable-notify` | `ENABLE_SD_NOTIFY` | Define systemd notification flag (note: currently defined but not used in codebase) | Disabled |
+| `--enable-unitTestDockerSupport` | `UNIT_TEST_DOCKER_SUPPORT` | Enable Docker-based unit testing support with static function visibility | Disabled |
 
 <br>
 
 **RDK-B Platform and Integration Requirements**
 
-- **RDK-B Components**: Component Registry (CcspCr), Persistent Storage Manager (PSM), WAN Manager (if FEATURE_RDKB_WAN_MANAGER enabled), VLAN Agent (if FEATURE_RDKB_WAN_AGENT enabled)
-- **HAL Dependencies**: ccsp_hal_ethsw.h interface with minimum HAL specification compliance for Ethernet switching operations, optional statistics HAL for ETH_STATS_ENABLED
+- **RDK-B Components**: Component Registry, Persistent Storage Manager (PSM), WAN Manager (if FEATURE_RDKB_WAN_MANAGER enabled), VLAN Agent (if FEATURE_RDKB_WAN_AGENT enabled)
+- **HAL Dependencies**: ccsp_hal_ethsw.h interface with minimum HAL specification compliance for Ethernet switching operations; platform-specific statistics support (ETH_STATS_ENABLED) may be available on some platforms
 - **Systemd Services**: ccsp-cr.service must be active, psm.service for configuration persistence, dbus.service for inter-process communication
 - **Hardware Requirements**: Ethernet switching hardware with HAL support, minimum 1 Ethernet interface, WAN-capable Ethernet port for WAN failover features
-- **Message Bus**: RBus component registration with Device.Ethernet namespace reservation (if RbusBuildFlagEnable), CCSP message bus integration for legacy TR-181 support
+- **Message Bus**: R-BUS component registration with Device.Ethernet namespace reservation for TR-181 support and inter-component communication
 - **TR-181 Data Model**: Device.Ethernet object hierarchy support, Device.DeviceInfo parameters for AutoWAN feature discovery
 - **Configuration Files**: TR181-EthAgent.xml for data model definitions (dynamically modified based on DISTRO features), PSM database initialization for default interface configurations
 - **Startup Order**: Component Registry → PSM → Ethernet Agent → WAN Manager (if enabled), HAL initialization must complete before Ethernet Agent startup
 
 **Threading Model** 
 
-The Ethernet Agent uses a multi-threaded design with dedicated execution contexts for core control flow, asynchronous event handling, and background activities such as telemetry/logging. While much of the agent logic is still event-driven, work is not confined to a single thread, so the implementation must treat interface state, configuration data, and published status as shared resources unless ownership is clearly restricted to one thread.
+The Ethernet Agent uses a multi-threaded design with dedicated execution contexts for core control flow, asynchronous event handling, and background activities such as telemetry/logging. The agent spawns multiple pthreads including a state machine thread (CcspEthManager_StateMachineThread), event handler threads (SysEventHandlerThrd, CosaDmlEthEventHandlerThread), monitoring threads (ThreadMonitorPhyAndNotify, CcspHalExtSw_AssociatedDeviceMonitorThread), message update threads (ThreadUpdateInformMsg, ThreadBootInformMsg), and configuration threads (ThreadConfigEthWan, CosaDmlEthWanChangeHandling). Work is distributed across these threads, so the implementation treats interface state, configuration data, and published status as shared resources requiring proper synchronization.
 
-- **Threading Architecture**: Multi-threaded with event-driven processing across dedicated worker threads
-- **Primary Responsibilities**: TR-181 DML operations, RBus/CCSP message handling, HAL notifications, state-machine transitions, status polling, and telemetry/logging may execute in different threads depending on build and runtime configuration
-- **Event Processing**: Asynchronous events from HAL, RBus method calls, timers, and internal worker threads are coordinated so that updates are serialized where required before mutating shared component state
+- **Threading Architecture**: Multi-threaded with event-driven processing across dedicated worker threads for state machine operations, event handling, monitoring, and background tasks
+- **Primary Responsibilities**: TR-181 DML operations execute in the main thread, while state-machine transitions, HAL event notifications, status polling, telemetry/logging, and WAN configuration changes execute in dedicated pthread contexts
+- **Event Processing**: Asynchronous events from HAL, R-BUS method calls, timers, and internal worker threads are coordinated so that updates are serialized where required before mutating shared component state
 - **Synchronization / Ownership Rules**: Shared mutable state must only be accessed under the component's synchronization primitives or via explicit thread ownership and hand-off mechanisms. Threads that do not own a piece of state should communicate changes through the agent's event/dispatch path rather than updating shared structures directly
 
 ### Component State Flow
@@ -202,7 +202,7 @@ sequenceDiagram
     HAL-->>EthAgent: HAL Ready & Interface Discovery
     Note over EthAgent: State: InitializingHAL → ConnectingServices
     
-    EthAgent->>WanMgr: Establish RBus Connection (if WAN Manager enabled)
+    EthAgent->>WanMgr: Establish R-BUS Connection (if WAN Manager enabled)
     WanMgr-->>EthAgent: Connection Established
     Note over EthAgent: State: ConnectingServices → Active
     
@@ -210,7 +210,7 @@ sequenceDiagram
     
     loop Runtime Operations
         Note over EthAgent: State: Active<br/>Monitor interfaces, process events
-        EthAgent->>EthAgent: Process HAL Events & RBus Methods
+        EthAgent->>EthAgent: Process HAL Events & R-BUS Methods
         EthAgent->>HAL: Poll Interface Status
         HAL-->>EthAgent: Status Updates
         EthAgent->>WanMgr: Publish Interface Events
@@ -277,7 +277,7 @@ sequenceDiagram
     participant PSM as PSM
     participant WanMgr as WAN Manager
 
-    Client->>DML: Set TR-181 Parameter (RBus)
+    Client->>DML: Set TR-181 Parameter (R-BUS)
     Note over DML: Validate parameter value & constraints
     DML->>Manager: Process Configuration Change
     Manager->>HAL: Apply Interface Configuration
@@ -301,7 +301,20 @@ sequenceDiagram
 
 The Ethernet Agent implements comprehensive TR-181 parameter support following BBF TR-181 Issue 2 specifications with RDK-Central extensions for enhanced Ethernet interface management and WAN failover capabilities. The implementation covers the Device.Ethernet object hierarchy with custom extensions for AutoWAN feature support and interface bridging control.
 
+> **Build Configuration Note**: The Ethernet Agent's TR-181 data model varies based on compile-time feature flags defined in the build configuration:
+> 
+> **Interface Table Implementation (mutually exclusive):**
+> - **FEATURE_RDKB_WAN_MANAGER**: Implements standard TR-181 `Device.Ethernet.Interface.{i}` table with full parameter support (Enable, Status, Alias, etc.) and Stats sub-object. This is the modern WAN Manager integration mode.
+> - **FEATURE_RDKB_WAN_AGENT**: Implements RDK-Central custom `Device.Ethernet.X_RDKCENTRAL-COM_Interface.{i}` table with vendor-specific parameters (X_RDKCENTRAL-COM_Upstream, X_RDKCENTRAL-COM_Status, etc.). This is the legacy WAN Agent integration mode.
+> 
+> **Optional AutoWAN Feature (independent flag):**
+> - **AUTOWAN_ENABLE**: When enabled, adds the `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN` object with automatic WAN interface selection capabilities. This object can be present in either WAN_MANAGER or WAN_AGENT builds.
+> 
+> Only one interface table implementation is active in a given build. The object hierarchies shown below indicate which build configuration each applies to.
+
 ### Object Hierarchy
+
+**When FEATURE_RDKB_WAN_MANAGER is enabled:**
 
 ```
 Device.
@@ -312,14 +325,14 @@ Device.
     ├── X_RDKCENTRAL-COM_WAN.
     │   ├── Enabled (boolean, R/W)
     │   └── Port (unsignedInt, R)
-    ├── Interface.{i}.
+    ├── Interface.{i}.                                         [Standard TR-181]
     │   ├── Enable (boolean, R/W)
     │   ├── Status (string, R)
     │   ├── Alias (string, R/W)
     │   ├── Name (string, R)
     │   ├── LastChange (unsignedInt, R)
     │   ├── LowerLayers (string, R/W)
-    │   ├── Upstream (boolean, R/W)
+    │   ├── Upstream (boolean, R/W)                            [R/W if FEATURE_RDKB_WAN_UPSTREAM]
     │   ├── MACAddress (string, R)
     │   ├── MaxBitRate (int, R)
     │   ├── CurrentBitRate (unsignedInt, R)
@@ -327,12 +340,48 @@ Device.
     │   ├── X_RDKCENTRAL-COM_AssociatedDevice.{i}.
     │   │   └── MACAddress (string, R/W)
     │   └── Stats.
-    │       ├── BytesSent (unsignedLong, R)
-    │       ├── BytesReceived (unsignedLong, R)
-    │       ├── PacketsSent (unsignedLong, R)
-    │       ├── PacketsReceived (unsignedLong, R)
-    │       └── ErrorsReceived (unsignedLong, R)
-    └── X_RDKCENTRAL-COM_EthernetWAN.
+    │       ├── BytesSent (string, R)                          [64-bit counter as string]
+    │       ├── BytesReceived (string, R)                      [64-bit counter as string]
+    │       ├── PacketsSent (unsignedInt, R)
+    │       ├── PacketsReceived (unsignedInt, R)
+    │       ├── ErrorsSent (unsignedInt, R)
+    │       ├── ErrorsReceived (unsignedInt, R)
+    │       ├── UnicastPacketsSent (unsignedInt, R)
+    │       ├── UnicastPacketsReceived (unsignedInt, R)
+    │       ├── DiscardPacketsSent (unsignedInt, R)
+    │       ├── DiscardPacketsReceived (unsignedInt, R)
+    │       ├── MulticastPacketsSent (unsignedInt, R)
+    │       ├── MulticastPacketsReceived (unsignedInt, R)
+    │       ├── BroadcastPacketsSent (unsignedInt, R)
+    │       ├── BroadcastPacketsReceived (unsignedInt, R)
+    │       └── UnknownProtoPacketsReceived (unsignedInt, R)
+    └── X_RDKCENTRAL-COM_EthernetWAN.                          [Only if AUTOWAN_ENABLE]
+        ├── SelectedOperationalMode (string, R/W)
+        ├── CurrentOperationalMode (string, R)
+        ├── LastKnownOperationalMode (string, R)
+        ├── ConfigureWan (boolean, R/W)
+        ├── PostCfgWanFinalize (string, R/W)
+        └── RequestPhyStatus (string, R/W)
+```
+
+**When FEATURE_RDKB_WAN_AGENT is enabled:**
+
+```
+Device.
+├── DeviceInfo.
+│   └── X_RDKCENTRAL-COM_AutowanFeatureSupport (boolean, R)
+└── Ethernet.
+    ├── X_RDKCENTRAL-COM_EthHost_Sync (boolean, R/W)
+    ├── X_RDKCENTRAL-COM_WAN.
+    │   ├── Enabled (boolean, R/W)
+    │   └── Port (unsignedInt, R)
+    ├── X_RDKCENTRAL-COM_Interface.{i}.                        [RDK-Central Custom]
+    │   ├── X_RDKCENTRAL-COM_Upstream (boolean, R/W)
+    │   ├── X_RDKCENTRAL-COM_WanValidated (boolean, R/W)
+    │   ├── X_RDKCENTRAL-COM_Name (string, R)
+    │   ├── X_RDKCENTRAL-COM_Status (string, R)                [Up(1), Down(2)]
+    │   └── X_RDKCENTRAL-COM_WanStatus (string, R/W)          [Up(1), Down(2)]
+    └── X_RDKCENTRAL-COM_EthernetWAN.                          [Only if AUTOWAN_ENABLE]
         ├── SelectedOperationalMode (string, R/W)
         ├── CurrentOperationalMode (string, R)
         ├── LastKnownOperationalMode (string, R)
@@ -343,7 +392,7 @@ Device.
 
 ### Parameter Definitions
 
-**Core Parameters:**
+**Common Parameters (all build configurations):**
 
 | Parameter Path | Data Type | Access | Default Value | Description | BBF Compliance |
 |----------------|-----------|--------|---------------|-------------|----------------|
@@ -351,13 +400,62 @@ Device.
 | `Device.Ethernet.X_RDKCENTRAL-COM_EthHost_Sync` | boolean | R/W | `false` | Controls synchronization of Ethernet host device information with connected devices for network topology discovery | RDK-Central Extension |
 | `Device.Ethernet.X_RDKCENTRAL-COM_WAN.Enabled` | boolean | R/W | `false` | Enables Ethernet WAN functionality allowing Ethernet interfaces to operate as WAN connections | RDK-Central Extension |
 | `Device.Ethernet.X_RDKCENTRAL-COM_WAN.Port` | unsignedInt | R | `0` | Indicates the physical port number currently configured for Ethernet WAN operation | RDK-Central Extension |
+
+**FEATURE_RDKB_WAN_MANAGER Interface Parameters:**
+
+| Parameter Path | Data Type | Access | Default Value | Description | BBF Compliance |
+|----------------|-----------|--------|---------------|-------------|----------------|
 | `Device.Ethernet.Interface.{i}.Enable` | boolean | R/W | `true` | Enables or disables the Ethernet interface. When disabled, interface is administratively down | TR-181 Issue 2 |
 | `Device.Ethernet.Interface.{i}.Status` | string | R | `"Down"` | Current operational status: Up(1), Down(2), Unknown(3), Dormant(4), NotPresent(5), LowerLayerDown(6), Error(7) | TR-181 Issue 2 |
-| `Device.Ethernet.Interface.{i}.Upstream` | boolean | R/W | `false` | Indicates whether interface is designated as upstream (WAN) connection. Controls routing and bridge membership | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Alias` | string | R/W | `""` | User-assigned name for the interface. Alternative identifier for interface reference | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Name` | string | R | System-assigned | System-assigned interface name (e.g., eth0, eth1). Read-only identifier | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.LastChange` | unsignedInt | R | `0` | Time in seconds since last interface state change. Used for monitoring interface stability | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.LowerLayers` | string | R/W | `""` | Comma-separated list of lower-layer interface references for layered interface stack | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Upstream` | boolean | R/W¹ | `false` | Indicates whether interface is designated as upstream (WAN) connection. Controls routing and bridge membership | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.MACAddress` | string | R | System-assigned | Physical MAC address of the Ethernet interface in colon-separated hexadecimal notation | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.MaxBitRate` | int | R | `-1` | Maximum supported bit rate in Mbps. -1 indicates unknown or auto-negotiation | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.CurrentBitRate` | unsignedInt | R | `0` | Current negotiated bit rate in Mbps. Reflects active link speed | TR-181 Issue 2 |
 | `Device.Ethernet.Interface.{i}.DuplexMode` | string | R/W | `"Auto"` | Interface duplex mode: Half(1), Full(2), Auto(3). Auto enables automatic negotiation | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.BytesSent` | string | R | `"0"` | Total bytes transmitted. Represented as string to support 64-bit counter values | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.BytesReceived` | string | R | `"0"` | Total bytes received. Represented as string to support 64-bit counter values | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.PacketsSent` | unsignedInt | R | `0` | Total packets transmitted | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.PacketsReceived` | unsignedInt | R | `0` | Total packets received | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.ErrorsSent` | unsignedInt | R | `0` | Total packets transmitted with errors | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.ErrorsReceived` | unsignedInt | R | `0` | Total packets received with errors | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.UnicastPacketsSent` | unsignedInt | R | `0` | Total unicast packets transmitted | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.UnicastPacketsReceived` | unsignedInt | R | `0` | Total unicast packets received | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.DiscardPacketsSent` | unsignedInt | R | `0` | Total outbound packets discarded (e.g., buffer full, policy) | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.DiscardPacketsReceived` | unsignedInt | R | `0` | Total inbound packets discarded (e.g., buffer full, policy) | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.MulticastPacketsSent` | unsignedInt | R | `0` | Total multicast packets transmitted | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.MulticastPacketsReceived` | unsignedInt | R | `0` | Total multicast packets received | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.BroadcastPacketsSent` | unsignedInt | R | `0` | Total broadcast packets transmitted | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.BroadcastPacketsReceived` | unsignedInt | R | `0` | Total broadcast packets received | TR-181 Issue 2 |
+| `Device.Ethernet.Interface.{i}.Stats.UnknownProtoPacketsReceived` | unsignedInt | R | `0` | Total packets received with unknown or unsupported protocol | TR-181 Issue 2 |
+
+¹ *Writable only when FEATURE_RDKB_WAN_UPSTREAM is enabled, otherwise read-only*
+
+**FEATURE_RDKB_WAN_AGENT Interface Parameters:**
+
+| Parameter Path | Data Type | Access | Default Value | Description | BBF Compliance |
+|----------------|-----------|--------|---------------|-------------|----------------|
+| `Device.Ethernet.X_RDKCENTRAL-COM_Interface.{i}.X_RDKCENTRAL-COM_Upstream` | boolean | R/W | `false` | Indicates whether interface is designated as upstream (WAN) connection for legacy WAN Agent integration | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_Interface.{i}.X_RDKCENTRAL-COM_WanValidated` | boolean | R/W | `false` | Indicates whether WAN connectivity validation has passed for this interface | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_Interface.{i}.X_RDKCENTRAL-COM_Name` | string | R | System-assigned | System-assigned interface name for legacy WAN Agent mode | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_Interface.{i}.X_RDKCENTRAL-COM_Status` | string | R | `"Down"` | Current operational status for legacy mode: Up(1), Down(2) | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_Interface.{i}.X_RDKCENTRAL-COM_WanStatus` | string | R/W | `"Down"` | WAN operational status for legacy mode: Up(1), Down(2) | RDK-Central Extension |
+
+**AUTOWAN_ENABLE Parameters (optional feature - only present when AUTOWAN_ENABLE is defined):**
+
+> **Note**: The `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN` object and its parameters are only available in builds where the AUTOWAN_ENABLE compile-time flag is enabled. This feature is independent of the WAN_MANAGER/WAN_AGENT choice and can be combined with either integration mode.
+
+| Parameter Path | Data Type | Access | Default Value | Description | BBF Compliance |
+|----------------|-----------|--------|---------------|-------------|----------------|
 | `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.SelectedOperationalMode` | string | R/W | `""` | User-selected WAN operational mode for automatic interface selection in multi-WAN scenarios | RDK-Central Extension |
 | `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.CurrentOperationalMode` | string | R | `""` | Currently active WAN operational mode reflecting actual system configuration | RDK-Central Extension |
-| `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.ConfigureWan` | boolean | R/W | `false` | Triggers WAN interface configuration process when set to true | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.LastKnownOperationalMode` | string | R | `""` | Previously active WAN operational mode before current mode. Used for failback operations | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.ConfigureWan` | boolean | R/W | `false` | Triggers WAN interface configuration process when set to true. Self-clearing after processing | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.PostCfgWanFinalize` | string | R/W | `""` | Post-configuration finalization command string for WAN setup completion | RDK-Central Extension |
+| `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.RequestPhyStatus` | string | R/W | `""` | Request physical interface status query. Write interface name to trigger status update | RDK-Central Extension |
 
 ## Internal Modules
 
@@ -365,12 +463,12 @@ The Ethernet Agent is structured into distinct functional modules that handle di
 
 | Module/Class | Description | Key Files |
 |-------------|------------|-----------|
-| **SSP Main Process** | Service provider layer handling process lifecycle, signal management, and message bus integration for component startup and shutdown coordination | `ssp_main.c`, `ssp_messagebus_interface.c`, `ssp_action.c` |
+| **SSP Main Process** | Service provider layer handling process lifecycle, signal management, and R-BUS integration for component startup and shutdown coordination | `ssp_main.c`, `ssp_messagebus_interface.c`, `ssp_action.c` |
 | **Ethernet DML Handler** | TR-181 data model implementation providing parameter access, validation, and event handling for Device.Ethernet object hierarchy | `cosa_ethernet_dml.c`, `cosa_ethernet_dml.h` |
 | **Interface DML Handler** | Specialized handler for Device.Ethernet.Interface table operations including dynamic interface discovery, configuration management, and statistics collection | `cosa_ethernet_interface_dml.c`, `cosa_ethernet_interface_dml.h` |
 | **Ethernet Manager** | Core business logic module managing interface state, configuration persistence, and coordination between HAL layer and upper middleware components | `cosa_ethernet_manager.c`, `cosa_ethernet_apis.c` |
 | **HAL Interface Module** | Hardware abstraction layer integration providing platform-independent access to Ethernet hardware capabilities and event handling | `eth_hal_interface.c`, `cosa_ethernet_apis.h` |
-| **RBus Handler** | Event-driven communication module managing RBus method registration, event publishing, and inter-component messaging for real-time interface status updates | `cosa_rbus_handler_apis.c`, `cosa_rbus_handler_apis.h` |
+| **R-BUS Handler** | Event-driven communication module managing R-BUS method registration, event publishing, and inter-component messaging for real-time interface status updates | `cosa_rbus_handler_apis.c`, `cosa_rbus_handler_apis.h` |
 
 ## Component Interactions
 
@@ -382,12 +480,12 @@ The Ethernet Agent integrates with multiple RDK-B middleware components and exte
 |------------------------|-------------------|------------------|
 | **RDK-B Middleware Components** |
 | WAN Manager | Interface status events and WAN failover coordination | `Device.Ethernet.X_RDKCENTRAL-COM_WAN.Enabled`, `Device.Ethernet.Interface.{i}.Upstream` |
-| VLAN Agent | Ethernet link configuration and VLAN interface creation | `Device.X_RDKCENTRAL-COM_Ethernet.Link.{i}.*` parameters via CCSP message bus |
+| VLAN Agent | Ethernet link configuration and VLAN interface creation | `Device.X_RDKCENTRAL-COM_Ethernet.Link.{i}.*` parameters via R-BUS |
 | PSM | Configuration persistence for interface settings | `dmsb.ethagent.if.{i}.Upstream`, `dmsb.ethagent.if.{i}.AddToLanBridge` |
 | Component Registry | Service registration and namespace management | Component registration with `eRT.com.cisco.spvtg.ccsp.ethagent` identifier |
-| Telemetry Agent | Interface statistics reporting | RBus events for statistics data: BytesSent, PacketsReceived, ErrorsReceived |
+| Telemetry Agent | Interface statistics reporting | R-BUS events for statistics data: BytesSent, PacketsReceived, ErrorsReceived |
 | **System & HAL Layers** |
-| Ethernet HAL | Hardware interface control and status monitoring | `ethsw_setIfAdminStatus()`, `ethsw_getIfStatus()`, `ethsw_getIfStatsAll()` |
+| Ethernet HAL | Hardware interface control and status monitoring | `CcspHalEthSwSetPortAdminStatus()`, `CcspHalEthSwGetPortStatus()`, `CcspHalEthSwGetEthPortStats()` |
 | Linux Network Stack | Direct interface manipulation for advanced configurations | `/sys/class/net/{interface}/operstate`, `ioctl()` system calls |
 
 **Events Published by Ethernet Agent:**
@@ -397,7 +495,9 @@ The Ethernet Agent integrates with multiple RDK-B middleware components and exte
 | Interface Status Change | `Device.Ethernet.Interface.{i}.Status` | Link up/down, operational state changes | WAN Manager, Telemetry Agent, Web UI |
 | WAN Interface Change | `Device.Ethernet.X_RDKCENTRAL-COM_WAN.Enabled` | WAN interface enable/disable, port changes | WAN Manager, VLAN Agent |
 | Interface Statistics Update | `Device.Ethernet.Interface.{i}.Stats.*` | Periodic statistics collection (configurable interval) | Telemetry Agent, SNMP Agent |
-| AutoWAN Mode Change | `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.CurrentOperationalMode` | WAN operational mode transitions | WAN Manager, Event logging systems |
+| AutoWAN Mode Change¹ | `Device.Ethernet.X_RDKCENTRAL-COM_EthernetWAN.CurrentOperationalMode` | WAN operational mode transitions | WAN Manager, Event logging systems |
+
+¹ *Only published when AUTOWAN_ENABLE is defined*
 
 ### IPC Flow Patterns
 
@@ -410,17 +510,17 @@ sequenceDiagram
     participant HAL as Ethernet HAL
     participant PSM as PSM
 
-    Client->>EthAgent: Set Device.Ethernet.Interface.1.Enable=true (RBus)
+    Client->>EthAgent: Set Device.Ethernet.Interface.1.Enable=true (R-BUS)
     Note over EthAgent: Validate parameter & check dependencies
-    EthAgent->>HAL: ethsw_setIfAdminStatus(1, true)
+    EthAgent->>HAL: CcspHalEthSwSetPortAdminStatus(1, true)
     HAL-->>EthAgent: SUCCESS/ERROR status
     alt Configuration Success
         EthAgent->>PSM: Set dmsb.ethagent.if.1.Enable=true
         PSM-->>EthAgent: Storage confirmation
-        EthAgent-->>Client: RBus method response (SUCCESS)
+        EthAgent-->>Client: R-BUS method response (SUCCESS)
     else Configuration Error
         Note over EthAgent: Log error & maintain previous state
-        EthAgent-->>Client: RBus method response (ERROR)
+        EthAgent-->>Client: R-BUS method response (ERROR)
     end
 ```
 
@@ -435,8 +535,8 @@ sequenceDiagram
 
     HAL->>EthAgent: Interface callback: Link Down Event
     Note over EthAgent: Update internal state & validate change
-    EthAgent->>WanMgr: RBus Event: Device.Ethernet.Interface.1.Status=Down
-    EthAgent->>Telemetry: RBus Event: Interface statistics update
+    EthAgent->>WanMgr: R-BUS Event: Device.Ethernet.Interface.1.Status=Down
+    EthAgent->>Telemetry: R-BUS Event: Interface statistics update
     WanMgr-->>EthAgent: Event acknowledgment (if required)
     Telemetry-->>EthAgent: Event acknowledgment (if required)
 ```
@@ -451,28 +551,32 @@ The Ethernet Agent integrates with the Ethernet HAL through the ccsp_hal_ethsw.h
 
 | HAL API | Purpose | Implementation File |
 |---------|---------|-------------------|
-| `ethsw_setIfAdminStatus()` | Set interface administrative status (enable/disable) | `cosa_ethernet_apis.c` |
-| `ethsw_getIfStatus()` | Retrieve current interface operational and administrative status | `cosa_ethernet_manager.c` |
-| `ethsw_getIfStatsAll()` | Collect comprehensive interface statistics (bytes, packets, errors) | `cosa_ethernet_apis.c` |
-| `ethsw_setIfDuplexMode()` | Configure interface duplex mode (half/full/auto) | `eth_hal_interface.c` |
-| `ethsw_getNumberOfPorts()` | Discover available Ethernet interfaces on the platform | `cosa_ethernet_manager.c` |
-| `ethsw_registerCallback()` | Register callback for asynchronous interface status notifications | `eth_hal_interface.c` |
+| `CcspHalEthSwSetPortAdminStatus()` | Set interface administrative status (enable/disable) | `source/TR-181/board_sbapi/source-arm/cosa_ethernet_apis_arm.c` |
+| `CcspHalEthSwGetPortStatus()` | Retrieve current interface operational status including link state, link rate, and duplex mode | `source/TR-181/board_sbapi/source-arm/cosa_ethernet_apis_arm.c` |
+| `CcspHalEthSwGetEthPortStats()` | Collect comprehensive interface statistics (bytes, packets, errors) | `source/TR-181/board_sbapi/source-arm/cosa_ethernet_apis_arm.c` |
+| `CcspHalEthSwGetPortCfg()` | Get interface configuration including link rate and duplex mode settings | `source/TR-181/board_sbapi/source-arm/cosa_ethernet_apis_arm.c` |
+| `CcspHalEthSwGetPortAdminStatus()` | Get interface administrative status (up/down) | `source/TR-181/board_sbapi/source-arm/cosa_ethernet_apis_arm.c` |
+| `CcspHalEthSw_RegisterLinkEventCallback()` | Register callback for asynchronous interface link status change notifications | `source/TR-181/middle_layer_src/cosa_ethernet_internal.c` |
+| `GWP_RegisterEthWan_Callback()` | Register callbacks for Ethernet WAN link up/down events | `source/TR-181/middle_layer_src/cosa_ethernet_internal.c` |
+| `CcspHalExtSw_getAssociatedDevice()` | Retrieve list of devices associated with Ethernet interfaces | `source/TR-181/board_sbapi/source-arm/cosa_ethernet_apis_arm.c`, `source/TR-181/board_sbapi/eth_hal_interface.c` |
 
 ### Key Implementation Logic
 
 - **Interface State Management**: The core state machine is implemented in `cosa_ethernet_manager.c` with interface state tracking, configuration validation, and event-driven status updates
-     - Main state machine logic in `CosaDmlEthPortGetEntry()` and `CosaDmlEthPortSetCfg()` functions
-     - State transition handlers in `EthInterface_SetParamBoolValue()` and `EthInterface_Validate()` functions
+     - Main state machine thread execution in `CcspEthManager_StateMachineThread()` function started by `CosaEthManager_Start_StateMachine()`
+     - Interface configuration and retrieval logic in `CosaDmlEthPortGetEntry()` and `CosaDmlEthPortSetCfg()` functions (source-arm/cosa_ethernet_apis_arm.c)
+     - State transition handlers in `EthInterface_SetParamBoolValue()` and `EthInterface_Validate()` functions (cosa_ethernet_dml.c)
   
-- **Event Processing**: Hardware events from the HAL layer are processed asynchronously and mapped to appropriate TR-181 parameter changes and RBus notifications
-     - HAL callback handling in `eth_hal_interface_callback()` function
-     - Event queue management through CCSP message bus integration 
-     - Asynchronous RBus event publishing in `cosa_rbus_handler_apis.c`
+- **Event Processing**: Hardware events from the HAL layer are processed asynchronously through multiple event handler threads and mapped to appropriate TR-181 parameter changes and R-BUS notifications
+     - Link status callback handling in `CosaDmlEthPortLinkStatusCallback()` function registered via `CcspHalEthSw_RegisterLinkEventCallback()`
+     - WAN link event callbacks `EthWanLinkUp_callback()` and `EthWanLinkDown_callback()` registered via `GWP_RegisterEthWan_Callback()`
+     - Event handler threads `SysEventHandlerThrd()` and `CosaDmlEthEventHandlerThread()` for processing queued events
+     - Asynchronous R-BUS event publishing in `cosa_rbus_handler_apis.c`
 
 - **Error Handling Strategy**: Comprehensive error detection and recovery with HAL error code mapping, automatic retry mechanisms, and detailed logging for troubleshooting
-     - HAL error code mapping in `CosaDmlEthPortGetStatus()` with ANSC_STATUS return codes
-     - Recovery mechanisms for failed HAL operations with automatic retries and fixed retry intervals where applicable
-     - Timeout handling for HAL operations with configurable timeout values and fallback procedures
+     - HAL error code mapping in `CosaDmlEthPortGetDinfo()` and HAL status query functions with ANSC_STATUS/RETURN_OK return codes
+     - Recovery mechanisms for failed HAL operations with detailed error logging and fallback to previous known good state
+     - Interface availability checking with `getIfAvailability()` to handle NotPresent status for missing physical interfaces
 
 - **Logging & Debugging**: Multi-level logging with interface-specific debug categories, HAL API tracing, and runtime configuration for troubleshooting
      - Interface state transition logging with COSA_LOG_LEVEL_INFO for normal operations
@@ -484,7 +588,7 @@ The Ethernet Agent integrates with the Ethernet HAL through the ccsp_hal_ethsw.h
 | Configuration File | Purpose | Override Mechanisms |
 |--------------------|---------|--------------------|
 | `config/TR181-EthAgent.xml` | TR-181 data model definitions and function mappings | Compile-time feature flags: FEATURE_RDKB_WAN_MANAGER, AUTOWAN_ENABLE |
-| `CcspEthAgent.cfg` | Component registration and message bus configuration; typically provided by the platform image or integration layer, not stored in this repository | Environment variables: CCSP_MSG_BUS_CFG, CCSP_CFG_PATH |
+| `CcspEthAgent.cfg` | Component registration and R-BUS configuration; typically provided by the platform image or integration layer, not stored in this repository | Environment variables: CCSP_MSG_BUS_CFG, CCSP_CFG_PATH |
 | `system_defaults` | Default interface configurations and PSM parameter values; typically provided by the platform image, build system, or companion repos, not stored in this repository | Build-time/integration configuration: --enable-wanfailover, --enable-dropearly |
 
 > **Note:** In this repository, the documented configuration artifact present is `config/TR181-EthAgent.xml`. Files such as `CcspEthAgent.cfg` and `system_defaults` are deployment/platform integration artifacts and may be supplied by the target image, build environment, or other repositories.
