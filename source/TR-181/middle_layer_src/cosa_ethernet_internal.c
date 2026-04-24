@@ -83,7 +83,7 @@
 #endif
 #endif //#if defined (FEATURE_RDKB_WAN_MANAGER)
 
-#if defined (WAN_FAILOVER_SUPPORTED)  ||  defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_)
+#if defined (WAN_FAILOVER_SUPPORTED)  ||  defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_PLATFORM_GENERICARM_)
 #include "cosa_rbus_handler_apis.h"
 #endif
 
@@ -370,7 +370,7 @@ CosaEthernetInitialize
 
 #if defined(FEATURE_RDKB_WAN_MANAGER)
 
-#if defined (WAN_FAILOVER_SUPPORTED) || defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_)
+#if defined (WAN_FAILOVER_SUPPORTED) || defined(RBUS_BUILD_FLAG_ENABLE) || defined (_HUB4_PRODUCT_REQ_) || defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_PLATFORM_GENERICARM_)
 	ethAgentRbusInit();
 #endif
 #if defined (WAN_FAILOVER_SUPPORTED)
@@ -384,6 +384,7 @@ CosaEthernetInitialize
     GWP_RegisterEthWan_Callback ( &obj );
     //Initialise global data and initalise hal
     CosaDmlEthInit(NULL, (PANSC_HANDLE)pMyObject);
+
 #if defined (WAN_FAILOVER_SUPPORTED)
     // The below case might occur, when box crashed/reboot before timeout or conditional signaled
     // Check if EWan failover simulation test file is exist or not.
