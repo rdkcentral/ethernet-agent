@@ -871,7 +871,7 @@ INT CosaDmlEth_AssociatedDevice_callback(eth_device_t *eth_dev)
         CcspTraceWarning(("<EthCB> mac:%s stat:%s\n",
 										mac_id,
 										(eth_dev->eth_Active) ? "Connected" : "Disconnected" ));
-
+	
 	    AnscCopyMemory(Eth_Host.eth_macAddr,eth_dev->eth_devMacAddress,6);
         Eth_Host.eth_Active = eth_dev->eth_Active;
 	    Eth_Host.eth_port = eth_dev->eth_port;		
