@@ -1327,12 +1327,16 @@ ANSC_STATUS is_usg_in_bridge_mode(BOOL *pBridgeMode)
 
 /*caller must free(*pp_info)*/
 #define _PROCNET_IFINET6  "/proc/net/if_inet6"
+/* CID 746317 : Out-of-bounds write (OVERRUN) */
+#define DEVNAME_MAX_LEN 20
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 int CosaUtilGetIpv6AddrInfo (char * ifname, ipv6_addr_info_t ** pp_info, int * p_num)
 {
     FILE * fp = NULL;
 	char addr6p[8][5];
 	int plen, scope, dad_status, if_idx;    
-	char addr6[40], devname[20];
+	char addr6[40], devname[DEVNAME_MAX_LEN+1];
 	struct sockaddr_in6 sap;
         errno_t rc = -1;
         int ind = -1;
@@ -1348,9 +1352,9 @@ int CosaUtilGetIpv6AddrInfo (char * ifname, ipv6_addr_info_t ** pp_info, int * p
     if (!fp){
         return -1;
     }
-    
+     /* CID 746317 : Out-of-bounds write (OVERRUN) */  
 	while (fscanf
-		   (fp, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %20s\n",
+		   (fp, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %" STR(DEVNAME_MAX_LEN) "s\n",
 			addr6p[0], addr6p[1], addr6p[2], addr6p[3], addr6p[4],
 			addr6p[5], addr6p[6], addr6p[7], &if_idx, &plen, &scope,
 			&dad_status, devname) != EOF
