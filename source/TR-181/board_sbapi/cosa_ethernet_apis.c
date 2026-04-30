@@ -871,7 +871,7 @@ INT CosaDmlEth_AssociatedDevice_callback(eth_device_t *eth_dev)
         CcspTraceWarning(("<EthCB> mac:%s stat:%s\n",
 										mac_id,
 										(eth_dev->eth_Active) ? "Connected" : "Disconnected" ));
-
+	
 	    AnscCopyMemory(Eth_Host.eth_macAddr,eth_dev->eth_devMacAddress,6);
         Eth_Host.eth_Active = eth_dev->eth_Active;
 	    Eth_Host.eth_port = eth_dev->eth_port;		
@@ -3461,7 +3461,7 @@ CosaDmlEthInit(
         }
     }
 #else
-    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
+    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_COSA_QCA_ARM_)
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
