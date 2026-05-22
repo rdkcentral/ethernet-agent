@@ -3465,10 +3465,9 @@ CosaDmlEthInit(
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
-    sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
-    if (out_value[0] != '\0')
+    if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
     {
-       strcpy(wanPhyName, out_value);
+       strncpy(wanPhyName, out_value, sizeof(wanPhyName) - 1);
     }
     else
     {
