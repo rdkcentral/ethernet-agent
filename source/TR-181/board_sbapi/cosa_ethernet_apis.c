@@ -3462,6 +3462,7 @@ CosaDmlEthInit(
     }
 #else
     #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_COSA_QCA_ARM_)
+    #ifndef FEATURE_RDKB_VLAN_MANAGER /* VLAN Manager owns VLAN/Bridge interface creation; Renaming is not required */
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
@@ -3498,6 +3499,7 @@ CosaDmlEthInit(
     v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
     v_secure_system("ifconfig %s up",wanPhyName);
     #endif
+    #endif // FEATURE_RDKB_VLAN_MANAGER
     #endif
 
     //Initialise ethsw-hal to get event notification from lower layer.
