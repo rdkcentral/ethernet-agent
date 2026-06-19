@@ -3462,7 +3462,7 @@ CosaDmlEthInit(
     }
 #else
     #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
-	   #ifndef (FEATURE_RDKB_VLAN_MANAGER)
+       #ifndef FEATURE_RDKB_VLAN_MANAGER
 
 	   char wanPhyName[20] = {0},out_value[20] = {0};
        macaddr_t macAddr;
