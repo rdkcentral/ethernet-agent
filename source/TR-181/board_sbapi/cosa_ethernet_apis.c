@@ -3461,37 +3461,68 @@ CosaDmlEthInit(
         }
     }
 #else
-    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_COSA_QCA_ARM_)
+    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
+	   #ifndef (FEATURE_RDKB_VLAN_MANAGER)
 
-    char wanPhyName[20] = {0},out_value[20] = {0};
+	   char wanPhyName[20] = {0},out_value[20] = {0};
+       macaddr_t macAddr;
+       char wan_mac[18];
+       if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
+       {
+          strncpy(wanPhyName, out_value, sizeof(wanPhyName) - 1);
+       }
+       else
+       {
+          /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+         * RDKBACCL-896 */
+          strcpy(wanPhyName, "erouter0");
+       }
 
-    if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
-    {
-       strncpy(wanPhyName, out_value, sizeof(wanPhyName) - 1);
-    }
-    else
-    {
+       memset(&macAddr,0,sizeof(macaddr_t));
+       getInterfaceMacAddress(&macAddr,wanPhyName);
+       memset(wan_mac,0,sizeof(wan_mac));
+       snprintf(wan_mac, sizeof(wan_mac), "%02x:%02x:%02x:%02x:%02x:%02x", macAddr.hw[0], macAddr.hw[1], macAddr.hw[2],
+                    macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
+
+       v_secure_system("syscfg get wan_physical_ifname > /tmp/wan_name.txt");
+       v_secure_system("ip link add name %s type bridge",wanPhyName);
+       v_secure_system("ip link set address %s dev %s",wan_mac,wanPhyName);
+       v_secure_system("ip link set dev %s master %s",ETHWAN_DEF_INTF_NAME,wanPhyName);
+       v_secure_system("ip link set %s up",ETHWAN_DEF_INTF_NAME);
+       v_secure_system("ip link set %s up",wanPhyName);
+	   #endif
+
+   #elif defined(_COSA_QCA_ARM_)
+      char wanPhyName[20] = {0},out_value[20] = {0};
+
+      sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
+	  if (out_value[0] != '\0')
+      {
+         strcpy(wanPhyName, out_value);
+      }
+      else
+      {
        /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
         * RDKBACCL-896 */
-       strcpy(wanPhyName, "erouter0");
-    }
-    #ifdef CORE_NET_LIB
-    libnet_status status;
-    status=interface_down(ETHWAN_DEF_INTF_NAME);
-    if(status != CNL_STATUS_SUCCESS) 
-    {
-        CcspTraceInfo(("Failed to down the interface %s\n",ETHWAN_DEF_INTF_NAME));
-    }
-    status=interface_rename(ETHWAN_DEF_INTF_NAME,wanPhyName);
-    if(status != CNL_STATUS_SUCCESS) 
-    {
+         strcpy(wanPhyName, "erouter0");
+      }
+      #ifdef CORE_NET_LIB
+      libnet_status status;
+      status=interface_down(ETHWAN_DEF_INTF_NAME);
+      if(status != CNL_STATUS_SUCCESS) 
+      {
+         CcspTraceInfo(("Failed to down the interface %s\n",ETHWAN_DEF_INTF_NAME));
+      }
+      status=interface_rename(ETHWAN_DEF_INTF_NAME,wanPhyName);
+      if(status != CNL_STATUS_SUCCESS) 
+      {
         CcspTraceInfo(("Failed to rename the interface %s with %s\n",ETHWAN_DEF_INTF_NAME,wanPhyName));
-    }
-    status=interface_up(wanPhyName);
-    if(status != CNL_STATUS_SUCCESS) 
-    {
+      }
+      status=interface_up(wanPhyName);
+      if(status != CNL_STATUS_SUCCESS) 
+      {
         CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
-    }
+      }
     #else
     v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
     v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
