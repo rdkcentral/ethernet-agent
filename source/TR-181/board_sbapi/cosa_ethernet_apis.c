@@ -3496,13 +3496,13 @@ CosaDmlEthInit(
     char wanPhyName[20] = {0},out_value[20] = {0};
 
     sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", out_value, sizeof(out_value));
-	if (out_value[0] != '\0')
+    if (out_value[0] != '\0')
     {
        strcpy(wanPhyName, out_value);
     }
     else
     {
-        /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+       /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
         * RDKBACCL-896 */
        strcpy(wanPhyName, "erouter0");
     }
