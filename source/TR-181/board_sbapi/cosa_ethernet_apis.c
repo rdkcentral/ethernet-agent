@@ -3486,7 +3486,7 @@ CosaDmlEthInit(
 
        v_secure_system("syscfg get wan_physical_ifname > /tmp/wan_name.txt");
        v_secure_system("ip link add name %s type bridge",wanPhyName);
-       v_secure_system("ip link set address %s dev %s",wan_mac,wanPhyName);
+       v_secure_system("ip link set dev %s address %s", wanPhyName, wan_mac);
        v_secure_system("ip link set dev %s master %s",ETHWAN_DEF_INTF_NAME,wanPhyName);
        v_secure_system("ip link set %s up",ETHWAN_DEF_INTF_NAME);
        v_secure_system("ip link set %s up",wanPhyName);
