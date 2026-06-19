@@ -3502,7 +3502,7 @@ CosaDmlEthInit(
     }
     else
     {
-       /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
+        /* erouter0 interface should be available even WAN over LTE is active to make sure fallback to WANoE is working.
         * RDKBACCL-896 */
        strcpy(wanPhyName, "erouter0");
     }
@@ -3511,17 +3511,17 @@ CosaDmlEthInit(
     status=interface_down(ETHWAN_DEF_INTF_NAME);
     if(status != CNL_STATUS_SUCCESS) 
     {
-       CcspTraceInfo(("Failed to down the interface %s\n",ETHWAN_DEF_INTF_NAME));
+        CcspTraceInfo(("Failed to down the interface %s\n",ETHWAN_DEF_INTF_NAME));
     }
     status=interface_rename(ETHWAN_DEF_INTF_NAME,wanPhyName);
     if(status != CNL_STATUS_SUCCESS) 
     {
-       CcspTraceInfo(("Failed to rename the interface %s with %s\n",ETHWAN_DEF_INTF_NAME,wanPhyName));
+        CcspTraceInfo(("Failed to rename the interface %s with %s\n",ETHWAN_DEF_INTF_NAME,wanPhyName));
     }
     status=interface_up(wanPhyName);
     if(status != CNL_STATUS_SUCCESS) 
     {
-       CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
+        CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
     }
     #else
     v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
@@ -3533,8 +3533,8 @@ CosaDmlEthInit(
     //Initialise ethsw-hal to get event notification from lower layer.
     if (CcspHalEthSwInit() != RETURN_OK)
     {
-       CcspTraceError(("Hal initialization failed \n"));
-       return ANSC_STATUS_FAILURE;
+        CcspTraceError(("Hal initialization failed \n"));
+        return ANSC_STATUS_FAILURE;
     }
 #endif
 #if defined (FEATURE_RDKB_WAN_AGENT)
