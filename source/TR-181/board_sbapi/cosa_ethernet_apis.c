@@ -3507,22 +3507,22 @@ CosaDmlEthInit(
       strcpy(wanPhyName, "erouter0");
     }
     #ifdef CORE_NET_LIB
-     libnet_status status;
-     status=interface_down(ETHWAN_DEF_INTF_NAME);
-     if(status != CNL_STATUS_SUCCESS) 
-     {
-      CcspTraceInfo(("Failed to down the interface %s\n",ETHWAN_DEF_INTF_NAME));
-     }
-     status=interface_rename(ETHWAN_DEF_INTF_NAME,wanPhyName);
-     if(status != CNL_STATUS_SUCCESS) 
-     {
-      CcspTraceInfo(("Failed to rename the interface %s with %s\n",ETHWAN_DEF_INTF_NAME,wanPhyName));
-     }
-     status=interface_up(wanPhyName);
-     if(status != CNL_STATUS_SUCCESS) 
-     {
-      CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
-     }
+    libnet_status status;
+    status=interface_down(ETHWAN_DEF_INTF_NAME);
+    if(status != CNL_STATUS_SUCCESS) 
+    {
+     CcspTraceInfo(("Failed to down the interface %s\n",ETHWAN_DEF_INTF_NAME));
+    }
+    status=interface_rename(ETHWAN_DEF_INTF_NAME,wanPhyName);
+    if(status != CNL_STATUS_SUCCESS) 
+    {
+     CcspTraceInfo(("Failed to rename the interface %s with %s\n",ETHWAN_DEF_INTF_NAME,wanPhyName));
+    }
+    status=interface_up(wanPhyName);
+    if(status != CNL_STATUS_SUCCESS) 
+    {
+     CcspTraceInfo(("Failed to up the interface %s\n",wanPhyName));
+    }
     #else
     v_secure_system("ifconfig " ETHWAN_DEF_INTF_NAME" down");
     v_secure_system("ip link set "ETHWAN_DEF_INTF_NAME" name %s",wanPhyName);
@@ -3533,8 +3533,8 @@ CosaDmlEthInit(
     //Initialise ethsw-hal to get event notification from lower layer.
     if (CcspHalEthSwInit() != RETURN_OK)
     {
-      CcspTraceError(("Hal initialization failed \n"));
-      return ANSC_STATUS_FAILURE;
+     CcspTraceError(("Hal initialization failed \n"));
+     return ANSC_STATUS_FAILURE;
     }
 #endif
 #if defined (FEATURE_RDKB_WAN_AGENT)
