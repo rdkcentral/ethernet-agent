@@ -3461,8 +3461,7 @@ CosaDmlEthInit(
         }
     }
 #else
-    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
-       #ifndef FEATURE_RDKB_VLAN_MANAGER
+      #if (defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)) && !defined(FEATURE_RDKB_VLAN_MANAGER)
 
 	   char wanPhyName[20] = {0},out_value[20] = {0};
        macaddr_t macAddr;
@@ -3490,7 +3489,7 @@ CosaDmlEthInit(
        v_secure_system("ip link set dev %s master %s",ETHWAN_DEF_INTF_NAME,wanPhyName);
        v_secure_system("ip link set %s up",ETHWAN_DEF_INTF_NAME);
        v_secure_system("ip link set %s up",wanPhyName);
-	   #endif
+	   
 
    #elif defined(_COSA_QCA_ARM_)
     char wanPhyName[20] = {0},out_value[20] = {0};
