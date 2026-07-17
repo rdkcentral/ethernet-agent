@@ -3949,7 +3949,7 @@ ANSC_STATUS CosaDmlTriggerExternalEthPortLinkStatus(char *ifname, BOOL status)
 {
     ANSC_STATUS   retStatus;
     INT           IfIndex = -1;
-    CcspTraceInfo(("%s.%d Enter (ifname=%s)\n",__FUNCTION__,__LINE__,ifname));
+    CcspTraceInfo(("%s.%d Enter (ifname=%s)\n", __FUNCTION__, __LINE__, ifname ? ifname : "(null)"));
     if (ifname == NULL)
     {
         CcspTraceError(("%s Invalid data \n", __FUNCTION__));
