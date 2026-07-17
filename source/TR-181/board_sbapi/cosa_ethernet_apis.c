@@ -3463,7 +3463,7 @@ CosaDmlEthInit(
 #else
    #if (defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)) && !defined(FEATURE_RDKB_VLAN_MANAGER)
 
-	   char wanPhyName[20] = {0},out_value[20] = {0},fileValue[20] = {0};;
+	   char wanPhyName[20] = {0},out_value[20] = {0},fileValue[20] = {0};
        FILE *fp = NULL;
        macaddr_t macAddr;
        char wan_mac[18];
