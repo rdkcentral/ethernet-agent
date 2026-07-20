@@ -968,14 +968,14 @@ int ethGetPHYRate
     CCSP_HAL_ETHSW_LINK_RATE LinkRate       = CCSP_HAL_ETHSW_LINK_NULL;
     CCSP_HAL_ETHSW_DUPLEX_MODE DuplexMode   = CCSP_HAL_ETHSW_DUPLEX_Auto;
     INT PHYRate                             = 0;
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_) || ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_)) || defined(_XER2_PRODUCT_REQ_)
     CCSP_HAL_ETHSW_LINK_STATUS  LinkStatus  = CCSP_HAL_ETHSW_LINK_Down;
 #endif
     /* For Broadcom platform device, CcspHalEthSwGetPortStatus returns the Linkrate based
      * on the CurrentBitRate and CcspHalEthSwGetPortCfg returns the Linkrate based on the
      * MaximumBitRate. Hence CcspHalEthSwGetPortStatus called for Broadcom platform devices.
      */
-#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)|| ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_))
+#if defined(_CBR_PRODUCT_REQ_) || defined(_COSA_BCM_MIPS_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)|| ( defined (_XB6_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_)) || defined (_XER2_PRODUCT_REQ_)
     status = CcspHalEthSwGetPortStatus(PortId, &LinkRate, &DuplexMode, &LinkStatus);
     CcspTraceWarning(("CcspHalEthSwGetPortStatus link rate %d\n", LinkRate));
 #else
@@ -3197,7 +3197,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
     #else
     v_secure_system("ifconfig %s down; ip link set %s name %s", wanPhyName,wanPhyName,ETHWAN_DOCSIS_INF_NAME);
     #endif
-#elif !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_XER5_PRODUCT_REQ_) && !defined(_SCXF11BFL_PRODUCT_REQ_)
+#elif !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_XER5_PRODUCT_REQ_) && !defined(_SCXF11BFL_PRODUCT_REQ_) && !defined(_XER2_PRODUCT_REQ_)
     #ifdef CORE_NET_LIB
     status=interface_down(wanPhyName);
     if (status != CNL_STATUS_SUCCESS) 
@@ -3323,7 +3323,7 @@ ANSC_STATUS EthWanBridgeInit(PCOSA_DATAMODEL_ETHERNET pEthernet)
     v_secure_system("ifconfig %s up",ethwan_ifname);
     #endif
 #endif
-#if defined (_CBR2_PRODUCT_REQ_) || defined (_SCER11BEL_PRODUCT_REQ_) || defined (_SCXF11BFL_PRODUCT_REQ_)
+#if defined (_CBR2_PRODUCT_REQ_) || defined (_SCER11BEL_PRODUCT_REQ_) || defined (_SCXF11BFL_PRODUCT_REQ_) || defined(_XER2_PRODUCT_REQ_)
     #ifdef CORE_NET_LIB
     status=interface_up(ethwan_ifname);
     if(status != CNL_STATUS_SUCCESS) 
