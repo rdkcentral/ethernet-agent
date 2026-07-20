@@ -751,7 +751,7 @@ EthernetWAN_SetParamStringValue
         ERR_CHK(rc);
         if ((!ind) && (rc == EOK))
         {
-	#if !defined (_XER5_PRODUCT_REQ_) && !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_SCXF11BFL_PRODUCT_REQ_)
+	#if !defined (_XER5_PRODUCT_REQ_) && !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_SCXF11BFL_PRODUCT_REQ_) && !defined(_XER2_PRODUCT_REQ_)
             bValue = FALSE;
             wan_mode = WAN_MODE_DOCSIS;
 	#else
