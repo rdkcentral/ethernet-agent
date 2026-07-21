@@ -33,6 +33,10 @@
 #endif /*_SR213_PRODUCT_REQ_*/
 #define ETH_POLLING_PERIOD 180
 #define ETH_NODE_HASH_SIZE 256
+/* Number of consecutive zero-associated-device polls required before treating
+ * it as a genuine all-clients-disconnected event. Debounces transient
+ * switch-FDB/HAL misses for still-connected idle clients. */
+#define ETH_ZERO_COUNT_THRESHOLD 2
 
 CcspHalExtSw_ethAssociatedDevice_callback AssociatedDevice_callback = NULL;
 
@@ -63,7 +67,12 @@ int ValidateClient(char *mac)
 	FILE *fp1 = NULL;
         errno_t rc = -1;
 		//Need to ignore brlan1 - XHS clients when during CB case
-        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -i REACHABLE > " ARP_CACHE, mac);
+		/* A still-connected but idle client's neighbour entry decays from
+		 * REACHABLE to STALE/DELAY/PROBE within ~30s, while this poll runs only
+		 * every ETH_POLLING_PERIOD (180s). Treat any known neighbour state as
+		 * valid and reject only FAILED/INCOMPLETE (truly gone) so that idle
+		 * clients are not falsely disconnected. */
+        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -iEv 'FAILED|INCOMPLETE' > " ARP_CACHE, mac);
 	if ( (fp1 = fopen(ARP_CACHE, "r")) == NULL )
 	{
         	return ret;
@@ -390,6 +399,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 		INT			  iLoopCount;
 		BOOL 		  bProcessFurther		= TRUE;
 		static BOOL   isDeleteAllDone	 	= FALSE;
+		static INT    uiZeroCountPolls		= 0;
 
 
 		CcspTraceDebug(("<EthMonThrd> Iteration Start\n") );
@@ -431,11 +441,25 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			if( 0 == ulTotalEthDeviceCount )
 			{
 				/*
-				  * We should not do more than one time when all host disconnected case again
-				  * and again
+				  * The switch FDB/HAL can momentarily report zero associated
+				  * devices for a still-connected idle client (its MAC aged out of
+				  * the switch table). Debounce by requiring ETH_ZERO_COUNT_THRESHOLD
+				  * consecutive zero-count polls before treating this as a real
+				  * all-clients-disconnected event, to avoid false disconnect churn.
 				  */
-				if( FALSE == isDeleteAllDone )
+				uiZeroCountPolls++;
+
+				if( uiZeroCountPolls < ETH_ZERO_COUNT_THRESHOLD )
 				{
+					CcspTraceInfo(("<EthMonThrd> - count is 0 (%d/%d) - deferring DeleteAllHosts\n",
+						uiZeroCountPolls, ETH_ZERO_COUNT_THRESHOLD ) );
+				}
+				else if( FALSE == isDeleteAllDone )
+				{
+					/*
+					  * We should not do more than one time when all host disconnected case again
+					  * and again
+					  */
 					CcspTraceInfo(("<EthMonThrd> - DeleteAllHosts due to count is 0\n") );
 					CcspHalExtSw_DeleteAllHosts( eth_device_hashArrayList, TRUE );
 					isDeleteAllDone = TRUE;
@@ -450,6 +474,8 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 
 				// Reset isDeleteAllDone variable to proceed further from next iteration
 				isDeleteAllDone = FALSE;
+				// Clients present again; reset the zero-count debounce counter
+				uiZeroCountPolls = 0;
 
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
 				{ 
@@ -489,8 +515,21 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						mode = 0;
 					}
 
-					/* Validate client in non-extender mode only*/
-					if (mode != 1)
+					/*
+					 * Validate client in non-extender mode only.
+					 *
+					 * Trust the HAL presence flag first: a device the HAL returns
+					 * with eth_Active == TRUE is physically present on the switch
+					 * (learnt in the switch FDB on a LAN port). Do NOT disconnect
+					 * such a client based on the ip-neigh/lease heuristic, because
+					 * an idle-but-connected client's neighbour entry is frequently
+					 * STALE/FAILED/absent even though it is still connected. Only
+					 * when the HAL itself reports the device inactive do we fall
+					 * back to ValidateClient(). A genuinely departed client is
+					 * still handled: it drops out of the HAL list (Host(-) loop)
+					 * or the count goes to 0 (debounced DeleteAllHosts).
+					 */
+					if ( (mode != 1) && (0 == pstRecvEthDevice[ iLoopCount ].eth_Active) )
 					{
 						// If valid then it will return 1
 						// If invalid then it will return 0
