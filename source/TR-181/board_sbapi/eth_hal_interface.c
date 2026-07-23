@@ -33,8 +33,6 @@
 #endif /*_SR213_PRODUCT_REQ_*/
 #define ETH_POLLING_PERIOD 180
 #define ETH_NODE_HASH_SIZE 256
-/* Consecutive zero-count polls before an all-clients-disconnected is treated as real. */
-#define ETH_ZERO_COUNT_THRESHOLD 2
 
 /* Consecutive polls a single host may be missing from the HAL list before disconnect
  * (debounces switch-FDB aging that drops one idle client, e.g. count 2->1). */
@@ -408,8 +406,6 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
     	ULONG 		  ulTotalEthDeviceCount	= 0;
 		INT			  iLoopCount;
 		BOOL 		  bProcessFurther		= TRUE;
-		static BOOL   isDeleteAllDone	 	= FALSE;
-		static INT    uiZeroCountPolls		= 0;
 
 
 		CcspTraceDebug(("<EthMonThrd> Iteration Start\n") );
@@ -420,8 +416,8 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu, isDeleteAllDone:%d\n", 
-			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
+		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu\n", 
+			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount));
 		
 		if( bProcessFurther )
 		{
@@ -429,7 +425,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			  * Handle Notification based on Add or Delete cases
 			  * -----------------------------------------
 			  * 1. Check whether ulTotalEthDeviceCount is greater than 0 or not. 
-			  * 1.1 If 0 then we need to delete all hosts and send notification 
+			  * 1.1 If 0 the Host(+) loop runs zero times; the Host(-) loop reconciles all hosts
 			  *
 			  * 2. Check whether received client mac is valid or not based on "ip nei show" & "dnsmasq.leases" file
 			  * 	
@@ -447,40 +443,12 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			  * 6. Remove all hosts from temp list
 			  */
 			
-			//if 0 then delete all nodes and send disconnected notification to Ethernet	
-			if( 0 == ulTotalEthDeviceCount )
-			{
-				/* HAL can momentarily report 0 devices for a still-connected idle
-				  * client (MAC aged out of the FDB). Debounce before DeleteAllHosts. */
-				uiZeroCountPolls++;
-
-				if( uiZeroCountPolls < ETH_ZERO_COUNT_THRESHOLD )
-				{
-					CcspTraceInfo(("<EthMonThrd> - count is 0 (%d/%d) - deferring DeleteAllHosts\n",
-						uiZeroCountPolls, ETH_ZERO_COUNT_THRESHOLD ) );
-				}
-				else if( FALSE == isDeleteAllDone )
-				{
-					/*
-					  * We should not do more than one time when all host disconnected case again
-					  * and again
-					  */
-					CcspTraceInfo(("<EthMonThrd> - DeleteAllHosts due to count is 0\n") );
-					CcspHalExtSw_DeleteAllHosts( eth_device_hashArrayList, TRUE );
-					isDeleteAllDone = TRUE;
-				}
-
-				bProcessFurther = FALSE;
-			}
-
-			if( bProcessFurther )
+			/* No count==0 special case: when the HAL list is empty the Host(+) loop
+			  * simply runs zero times and the Host(-) loop below reconciles every
+			  * known host through the same per-client ValidateClient + miss debounce,
+			  * so a transient count==0 no longer bulk-deletes still-present clients. */
 			{
 				CcspTraceDebug(("<EthMonThrd> - Host(+) Loop Start\n") );
-
-				// Reset isDeleteAllDone variable to proceed further from next iteration
-				isDeleteAllDone = FALSE;
-				// Clients present again; reset the zero-count debounce counter
-				uiZeroCountPolls = 0;
 
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
 				{ 
@@ -578,16 +546,32 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 					}
 					else
 					{
-						/* Host missing this poll. A single idle client's MAC can age out
-						  * of the FDB (count 2->1), not caught by the count==0 debounce;
-						  * require ETH_HOST_MISS_THRESHOLD consecutive misses before delete. */
-						if ( ++pstNode->misses < ETH_HOST_MISS_THRESHOLD )
+						/* Host missing from this poll's HAL list. The FDB-offload list is
+						  * unreliable for idle clients (can stay dropped for several polls),
+						  * so confirm with an independent signal before disconnecting:
+						  * ValidateClient() (ip neigh not FAILED/INCOMPLETE, or dnsmasq lease).
+						  * Only when that also says gone do we debounce, then DeleteHost. */
+						char miss_mac_id[ 18 ] = {0};
+
+						snprintf
+						(
+							miss_mac_id,
+							sizeof( miss_mac_id ),
+							"%02X:%02X:%02X:%02X:%02X:%02X",
+							pstNode->dev.eth_devMacAddress[0], pstNode->dev.eth_devMacAddress[1],
+							pstNode->dev.eth_devMacAddress[2], pstNode->dev.eth_devMacAddress[3],
+							pstNode->dev.eth_devMacAddress[4], pstNode->dev.eth_devMacAddress[5]
+						);
+
+						if ( ValidateClient( miss_mac_id ) )
 						{
-							CcspTraceInfo(("<EthMonThrd> - host %02X:%02X:%02X:%02X:%02X:%02X missing (%u/%d) - deferring DeleteHost\n",
-								pstNode->dev.eth_devMacAddress[0], pstNode->dev.eth_devMacAddress[1],
-								pstNode->dev.eth_devMacAddress[2], pstNode->dev.eth_devMacAddress[3],
-								pstNode->dev.eth_devMacAddress[4], pstNode->dev.eth_devMacAddress[5],
-								pstNode->misses, ETH_HOST_MISS_THRESHOLD ));
+							//Independent signal says still present - retain, reset debounce
+							pstNode->misses = 0;
+						}
+						else if ( ++pstNode->misses < ETH_HOST_MISS_THRESHOLD )
+						{
+							CcspTraceInfo(("<EthMonThrd> - host %s missing+unvalidated (%u/%d) - deferring DeleteHost\n",
+								miss_mac_id, pstNode->misses, ETH_HOST_MISS_THRESHOLD ));
 						}
 						else
 						{
