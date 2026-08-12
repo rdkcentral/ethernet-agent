@@ -164,7 +164,9 @@ extern  char g_Subsystem[BUFLEN_32];
 #include "cosa_ethernet_manager.h"
 #endif
 #if defined (FEATURE_RDKB_WAN_MANAGER)
-#if defined (_CBR2_PRODUCT_REQ_)
+#if defined (_PLATFORM_GENERICARM_)
+#define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 10
+#elif defined (_CBR2_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 6
 #elif defined (_XER5_PRODUCT_REQ_) || defined(_SCER11BEL_PRODUCT_REQ_) || defined(_SCXF11BFL_PRODUCT_REQ_)
 #define TOTAL_NUMBER_OF_INTERNAL_INTERFACES 5
@@ -3947,7 +3949,7 @@ ANSC_STATUS CosaDmlTriggerExternalEthPortLinkStatus(char *ifname, BOOL status)
 {
     ANSC_STATUS   retStatus;
     INT           IfIndex = -1;
-    CcspTraceInfo(("%s.%d Enter \n",__FUNCTION__,__LINE__));
+    CcspTraceInfo(("%s.%d Enter (ifname=%s)\n", __FUNCTION__, __LINE__, ifname ? ifname : "(null)"));
     if (ifname == NULL)
     {
         CcspTraceError(("%s Invalid data \n", __FUNCTION__));
