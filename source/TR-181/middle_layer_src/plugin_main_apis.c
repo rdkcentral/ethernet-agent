@@ -77,6 +77,10 @@
 extern int sock;
 #endif
 
+#if defined(_PLATFORM_GENERICARM_) && defined(USE_SYSTEMD_NOTIFICATIONS)
+#include <systemd/sd-daemon.h>
+#endif
+
 /**********************************************************************
 
     caller:     owner of the object
@@ -173,6 +177,9 @@ CosaBackEndManagerInitialize
 
     printf("CosaEthInferface initialization done!\n");
 
+#if defined(_PLATFORM_GENERICARM_) && defined(USE_SYSTEMD_NOTIFICATIONS)
+    sd_notify(0,"READY=1");
+#endif
     return returnStatus;
 }
 
