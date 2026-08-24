@@ -321,8 +321,10 @@ int main(int argc, char* argv[])
 
     pComponentName          = CCSP_COMPONENT_NAME_ETHAGENT;
 
+#if !(defined(_PLATFORM_GENERICARM_) && defined(USE_SYSTEMD_NOTIFICATIONS))
     if ( bRunAsDaemon )
         daemonize();
+#endif
 
 CcspTraceInfo(("\nAfter daemonize before signal\n"));
 
