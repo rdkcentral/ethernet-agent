@@ -495,6 +495,7 @@ BOOL EthAgent_Rbus_discover_components(char const *pModuleList)
 rbusError_t ethAgentRbusInit()
 {
 	int rc = RBUS_ERROR_SUCCESS;
+
 	rc = rbus_open(&handle, RBUS_COMPONENT_NAME);
 	if (rc != RBUS_ERROR_SUCCESS)
 	{

@@ -47,6 +47,14 @@
 
 #include "cosa_ethernet_interface_dml.h"
 
+#include <stdio.h>
+#include <string.h>
+#include <malloc.h>
+#include <time.h>
+#include <unistd.h>
+
+#define ETHAGENT_DM_REG_MEM_FILE   "/tmp/rbus_mem_registration"
+
 PCOSA_BACKEND_MANAGER_OBJECT g_pCosaBEManager;
 
 #define THIS_PLUGIN_VERSION                         1
@@ -80,6 +88,84 @@ COSARepopulateTableProc            g_COSARepopulateTable;
 void *                       g_pDslhDmlAgent;
 extern ANSC_HANDLE     g_MessageBusHandle_Irep;
 extern char            g_SubSysPrefix_Irep[32];
+
+/* Dumps every memory region the kernel reports for this process plus glibc heap counters. */
+static void EthAgentLogDmRegMem(const char *stage)
+{
+    static const char * const memFields[] = {
+        "VmPeak", "VmSize", "VmLck", "VmPin", "VmHWM", "VmRSS",
+        "RssAnon", "RssFile", "RssShmem", "VmData", "VmStk", "VmExe",
+        "VmLib", "VmPTE", "VmSwap", "HugetlbPages", "Threads"
+    };
+    char    summary[1024] = {0};
+    char    line[256];
+    size_t  used = 0;
+    size_t  i;
+    FILE*   fp;
+
+    fp = fopen("/proc/self/status", "r");
+    if (fp)
+    {
+        while (fgets(line, sizeof(line), fp))
+        {
+            char* colon = strchr(line, ':');
+
+            if (!colon)
+                continue;
+
+            *colon = '\0';
+
+            for (i = 0; i < sizeof(memFields) / sizeof(memFields[0]); i++)
+            {
+                char* value;
+                int   n;
+
+                if (strcmp(line, memFields[i]) != 0)
+                    continue;
+
+                value = colon + 1;
+                while (*value == ' ' || *value == '\t')
+                    value++;
+                value[strcspn(value, "\r\n")] = '\0';
+
+                n = snprintf(summary + used, sizeof(summary) - used, " %s=%s", memFields[i], value);
+                if (n > 0 && (size_t)n < sizeof(summary) - used)
+                    used += (size_t)n;
+                break;
+            }
+        }
+        fclose(fp);
+    }
+
+    {
+#if defined(__GLIBC__) && ((__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 33)))
+        struct mallinfo2 mi = mallinfo2();
+#else
+        struct mallinfo  mi = mallinfo();
+#endif
+        snprintf(summary + used, sizeof(summary) - used,
+                 " HeapArena=%lu HeapMmap=%lu HeapInUse=%lu HeapFree=%lu HeapTop=%lu",
+                 (unsigned long)mi.arena, (unsigned long)mi.hblkhd,
+                 (unsigned long)mi.uordblks, (unsigned long)mi.fordblks,
+                 (unsigned long)mi.keepcost);
+    }
+
+    /* Shared across agents, so append and flush on every sample. */
+    fp = fopen(ETHAGENT_DM_REG_MEM_FILE, "a");
+    if (fp)
+    {
+        time_t     now = time(NULL);
+        struct tm  tmNow;
+        char       ts[32] = "unknown";
+
+        if (localtime_r(&now, &tmNow))
+            strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", &tmNow);
+
+        fprintf(fp, "%s pid=%d component=com.cisco.spvtg.ccsp.ethagent stage=%s%s\n",
+                ts, (int)getpid(), stage, summary);
+        fclose(fp);
+    }
+}
 
 int ANSC_EXPORT_API
 COSA_Init
@@ -117,6 +203,9 @@ COSA_Init
     }   
     
     pPlugInfo->uPluginVersion       = THIS_PLUGIN_VERSION;
+
+    EthAgentLogDmRegMem("before_COSA_Init_RegisterFunction");
+
     /* register the back-end apis for the data model */
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "AutowanFeatureSupport_GetParamBoolValue",  AutowanFeatureSupport_GetParamBoolValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Ethernet_GetParamBoolValue",  Ethernet_GetParamBoolValue);
@@ -399,6 +488,8 @@ COSA_Init
 
 g_EthObject          = (ANSC_HANDLE)CosaEthernetCreate();
 
+    EthAgentLogDmRegMem("after_COSA_Init_RegisterFunction");
+
 #if defined(FEATURE_RDKB_WAN_MANAGER)
 
     /* Create backend framework */
@@ -411,6 +502,8 @@ g_EthObject          = (ANSC_HANDLE)CosaEthernetCreate();
         g_pCosaBEManager->Initialize   ((ANSC_HANDLE)g_pCosaBEManager);
     }
 #endif
+
+    EthAgentLogDmRegMem("end_COSA_Init");
 
     return  0;
 EXIT:
