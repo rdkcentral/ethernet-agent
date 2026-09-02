@@ -3463,7 +3463,71 @@ CosaDmlEthInit(
         }
     }
 #else
-    #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_) || defined(_COSA_QCA_ARM_)
+   #if (defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)) && !defined(FEATURE_RDKB_VLAN_MANAGER)
+
+	   char wanPhyName[20] = {0},out_value[20] = {0},fileValue[20] = {0};
+       FILE *fp = NULL;
+       macaddr_t macAddr;
+       char wan_mac[18];
+       if (!syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)))
+       {
+         fp = fopen("/nvram/wan_name.txt", "r");
+         if (fp == NULL)
+         {
+           fp = fopen("/nvram/wan_name.txt", "w");
+           if (fp == NULL)
+              strcpy(wanPhyName, "erouter0");
+           else
+           {
+              fprintf(fp, "%s", out_value);
+               strncpy(wanPhyName, out_value, sizeof(wanPhyName) - 1);
+               fclose(fp);
+           }
+         }
+         else if (fgets(fileValue, sizeof(fileValue), fp) == NULL)
+         {
+             fclose(fp);
+             fp = fopen("/nvram/wan_name.txt", "w");
+             if (fp != NULL)
+             {
+               fprintf(fp, "%s", out_value);
+               strncpy(wanPhyName, out_value, sizeof(wanPhyName) - 1);
+               fclose(fp);
+             }
+             else
+                strcpy(wanPhyName, "erouter0");
+         }
+         else
+         {
+             fclose(fp);
+             fileValue[strcspn(fileValue, "\r\n")] = '\0';
+             if (strcmp(fileValue, out_value) != 0)
+             {
+               if ( syscfg_set_commit( NULL,  "wan_physical_ifname", fileValue ) != 0 )
+                    strcpy(wanPhyName, "erouter0");
+               else
+                strncpy(wanPhyName,fileValue, sizeof(wanPhyName) - 1);
+             }
+             else
+                 strncpy(wanPhyName, out_value, sizeof(wanPhyName) - 1);
+         }
+      }
+      else
+          strcpy(wanPhyName, "erouter0");
+       memset(&macAddr,0,sizeof(macaddr_t));
+       getInterfaceMacAddress(&macAddr,wanPhyName);
+       memset(wan_mac,0,sizeof(wan_mac));
+       snprintf(wan_mac, sizeof(wan_mac), "%02x:%02x:%02x:%02x:%02x:%02x", macAddr.hw[0], macAddr.hw[1], macAddr.hw[2],
+                    macAddr.hw[3], macAddr.hw[4], macAddr.hw[5]);
+
+       v_secure_system("syscfg get wan_physical_ifname > /tmp/wan_name.txt");
+       v_secure_system("ip link add name %s type bridge",wanPhyName);
+       v_secure_system("ip link set dev %s address %s", wanPhyName, wan_mac);
+       v_secure_system("ip link set dev %s master %s",ETHWAN_DEF_INTF_NAME,wanPhyName);
+       v_secure_system("ip link set %s up",ETHWAN_DEF_INTF_NAME);
+       v_secure_system("ip link set %s up",wanPhyName);
+	   
+   #elif defined(_COSA_QCA_ARM_)
 
     char wanPhyName[20] = {0},out_value[20] = {0};
 
