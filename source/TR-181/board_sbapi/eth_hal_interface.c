@@ -34,6 +34,10 @@
 #define ETH_POLLING_PERIOD 180
 #define ETH_NODE_HASH_SIZE 256
 
+/* Consecutive polls a single host may be missing from the HAL list before disconnect
+ * (debounces switch-FDB aging that drops one idle client, e.g. count 2->1). */
+#define ETH_HOST_MISS_THRESHOLD 2
+
 CcspHalExtSw_ethAssociatedDevice_callback AssociatedDevice_callback = NULL;
 
 /*********** Function Prototype Start**************/
@@ -51,6 +55,14 @@ unsigned int mac_hash( char *str);
 
 eth_device_t* eth_device_hashArrayList[ ETH_NODE_HASH_SIZE ];
 eth_device_t* eth_device_hashArrayTempList[ ETH_NODE_HASH_SIZE ];
+
+/* Hash-list node: eth_device_t MUST stay first so an eth_device_t* aliases the
+ * node and free() releases it. 'misses' = per-host consecutive-miss debounce
+ * counter for the Host(-) loop; created and freed with the node. */
+typedef struct _eth_node {
+    eth_device_t dev;      /* MUST be first member */
+    unsigned int misses;
+} eth_node_t;
 
 int ValidateClient(char *mac)
 {
@@ -227,7 +239,7 @@ int CcspHalExtSw_AddHost( eth_device_t *pstEthHost, eth_device_t* eth_device_Arr
        return -1;
    }
 
-   pstEthLocalHost = malloc(sizeof(eth_device_t));
+   pstEthLocalHost = malloc(sizeof(eth_node_t));
    if (pstEthLocalHost == NULL)
    {
        CcspTraceInfo(("%s %d - pstEthLocalHost Null\n" ,__FUNCTION__,__LINE__ ));
@@ -242,6 +254,9 @@ int CcspHalExtSw_AddHost( eth_device_t *pstEthHost, eth_device_t* eth_device_Arr
       free(pstEthLocalHost);
       return -1;
    }
+
+   //Zero the Host(-) debounce counter
+   ((eth_node_t *)pstEthLocalHost)->misses = 0;
 
    //MAC Conversion
    snprintf
@@ -400,8 +415,8 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu, isDeleteAllDone:%d\n", 
-			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
+		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu\n", 
+			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount));
 		
 		if( bProcessFurther )
 		{
@@ -427,7 +442,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			  * 6. Remove all hosts from temp list
 			  */
 			
-			//if 0 then delete all nodes and send disconnected notification to Ethernet	
+			//if 0 then delete all nodes and send disconnected notification to Ethernet
 			if( 0 == ulTotalEthDeviceCount )
 			{
 				/*
@@ -448,7 +463,7 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			{
 				CcspTraceDebug(("<EthMonThrd> - Host(+) Loop Start\n") );
 
-				// Reset isDeleteAllDone variable to proceed further from next iteration
+				// Reset the all-deleted guard now that clients are present again
 				isDeleteAllDone = FALSE;
 
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
@@ -489,8 +504,12 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						mode = 0;
 					}
 
-					/* Validate client in non-extender mode only*/
-					if (mode != 1)
+					/* Non-extender only. Trust the HAL: an eth_Active==TRUE device is on
+					 * the switch FDB, so don't disconnect it on the flaky ip-neigh/lease
+					 * heuristic (idle clients often show STALE/absent). Fall back to
+					 * ValidateClient() only when the HAL says inactive; real departures
+					 * still hit the Host(-) loop / count==0 path. */
+					if ( (mode != 1) && (0 == pstRecvEthDevice[ iLoopCount ].eth_Active) )
 					{
 						// If valid then it will return 1
 						// If invalid then it will return 0
@@ -527,15 +546,39 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				//Disconnection Case
 				for( iLoopCount = 0; iLoopCount< ETH_NODE_HASH_SIZE; iLoopCount++ ) 
 				{
+					eth_node_t *pstNode = (eth_node_t *)eth_device_hashArrayList[ iLoopCount ];
+
+					if ( NULL == pstNode )
+					{
+						continue;
+					}
+
 					// If found then it will give host address 
 					// If not found then it will give NULL value
-					if ( ( NULL != eth_device_hashArrayList[ iLoopCount ] ) &&\
-						 ( NULL == CcspHalExtSw_FindHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayTempList, NULL ) )
-						)
+					if ( NULL != CcspHalExtSw_FindHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayTempList, NULL ) )
 					{
-						//Delete and Need to send notification	 
-						CcspTraceDebug(("%s:%d Delete and need to send notification\n", __FUNCTION__, __LINE__));
-						CcspHalExtSw_DeleteHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayList, TRUE );
+						//Host still present in this poll - reset its miss counter
+						pstNode->misses = 0;
+					}
+					else
+					{
+						/* Host missing this poll. A single idle client's MAC can age out
+						  * of the FDB (count 2->1); require ETH_HOST_MISS_THRESHOLD
+						  * consecutive misses before disconnecting to debounce it. */
+						if ( ++pstNode->misses < ETH_HOST_MISS_THRESHOLD )
+						{
+							CcspTraceInfo(("<EthMonThrd> - host %02X:%02X:%02X:%02X:%02X:%02X missing (%u/%d) - deferring DeleteHost\n",
+								pstNode->dev.eth_devMacAddress[0], pstNode->dev.eth_devMacAddress[1],
+								pstNode->dev.eth_devMacAddress[2], pstNode->dev.eth_devMacAddress[3],
+								pstNode->dev.eth_devMacAddress[4], pstNode->dev.eth_devMacAddress[5],
+								pstNode->misses, ETH_HOST_MISS_THRESHOLD ));
+						}
+						else
+						{
+							//Delete and Need to send notification
+							CcspTraceDebug(("%s:%d Delete and need to send notification\n", __FUNCTION__, __LINE__));
+							CcspHalExtSw_DeleteHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayList, TRUE );
+						}
 					}
 				}
 
