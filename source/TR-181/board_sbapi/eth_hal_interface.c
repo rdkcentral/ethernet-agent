@@ -33,8 +33,15 @@
 #endif /*_SR213_PRODUCT_REQ_*/
 #define ETH_POLLING_PERIOD 180
 #define ETH_NODE_HASH_SIZE 256
+#define ETH_HOST_MISS_THRESHOLD 2
 
 CcspHalExtSw_ethAssociatedDevice_callback AssociatedDevice_callback = NULL;
+
+/* Tracks consecutive polls a cached host is missing before it is removed. */
+typedef struct _eth_node {
+	eth_device_t dev;
+	unsigned int misses;
+} eth_node_t;
 
 /*********** Function Prototype Start**************/
 
@@ -63,7 +70,7 @@ int ValidateClient(char *mac)
 	FILE *fp1 = NULL;
         errno_t rc = -1;
 		//Need to ignore brlan1 - XHS clients when during CB case
-        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -i REACHABLE > " ARP_CACHE, mac);
+        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -iEv 'FAILED|INCOMPLETE' > " ARP_CACHE, mac);
 	if ( (fp1 = fopen(ARP_CACHE, "r")) == NULL )
 	{
         	return ret;
@@ -243,6 +250,8 @@ int CcspHalExtSw_AddHost( eth_device_t *pstEthHost, eth_device_t* eth_device_Arr
       return -1;
    }
 
+   ((eth_node_t *)pstEthLocalHost)->misses = 0;
+
    //MAC Conversion
    snprintf
    (
@@ -377,6 +386,31 @@ void CcspHalExtSw_SendNotificationForAllHosts( void )
    }
 }
 
+/* Returns TRUE only when the client's switch port link is confirmed up.
+ * A HAL read error or invalid port returns FALSE. */
+static BOOL isEthClientPortLinkUp( INT eth_port )
+{
+    CCSP_HAL_ETHSW_PORT        port;
+    CCSP_HAL_ETHSW_LINK_RATE   linkRate   = CCSP_HAL_ETHSW_LINK_NULL;
+    CCSP_HAL_ETHSW_DUPLEX_MODE duplexMode = CCSP_HAL_ETHSW_DUPLEX_Auto;
+    CCSP_HAL_ETHSW_LINK_STATUS linkStatus = CCSP_HAL_ETHSW_LINK_Down;
+
+    if ( eth_port < 0 )
+    {
+        return FALSE;
+    }
+
+    /* Associated-device ports are 0-based; Ethernet switch HAL ports start at 1. */
+    port = (CCSP_HAL_ETHSW_PORT)( eth_port + CCSP_HAL_ETHSW_EthPort1 );
+
+    if ( RETURN_OK != CcspHalEthSwGetPortStatus( port, &linkRate, &duplexMode, &linkStatus ) )
+    {
+        return FALSE;
+    }
+
+    return ( CCSP_HAL_ETHSW_LINK_Up == linkStatus ) ? TRUE : FALSE;
+}
+
 /* CcspHalExtSw_AssociatedDeviceMonitorThread(  ) */
 void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 {
@@ -389,19 +423,18 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
     	ULONG 		  ulTotalEthDeviceCount	= 0;
 		INT			  iLoopCount;
 		BOOL 		  bProcessFurther		= TRUE;
-		static BOOL   isDeleteAllDone	 	= FALSE;
 
 
 		CcspTraceDebug(("<EthMonThrd> Iteration Start\n") );
 		//Get Associated Device Details from HAL. Do nothing if failure case
-		if(-1 == CcspHalExtSw_getAssociatedDevice( &ulTotalEthDeviceCount, &pstRecvEthDevice ))
+		if(ANSC_STATUS_SUCCESS != CcspHalExtSw_getAssociatedDevice( &ulTotalEthDeviceCount, &pstRecvEthDevice ))
 		{
 			CcspTraceInfo(("%s %d - Fail to get AssociatedDevice details\n" ,__FUNCTION__,__LINE__ ) );
 			bProcessFurther = FALSE;
 		}
 
-		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu, isDeleteAllDone:%d\n", 
-			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount, isDeleteAllDone));
+		CcspTraceDebug(("%s:%d bProcessFurther:%d, ulTotalEthDeviceCount:%lu\n", 
+			__FUNCTION__, __LINE__, bProcessFurther, ulTotalEthDeviceCount));
 		
 		if( bProcessFurther )
 		{
@@ -427,29 +460,12 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 			  * 6. Remove all hosts from temp list
 			  */
 			
-			//if 0 then delete all nodes and send disconnected notification to Ethernet	
-			if( 0 == ulTotalEthDeviceCount )
-			{
-				/*
-				  * We should not do more than one time when all host disconnected case again
-				  * and again
-				  */
-				if( FALSE == isDeleteAllDone )
-				{
-					CcspTraceInfo(("<EthMonThrd> - DeleteAllHosts due to count is 0\n") );
-					CcspHalExtSw_DeleteAllHosts( eth_device_hashArrayList, TRUE );
-					isDeleteAllDone = TRUE;
-				}
-
-				bProcessFurther = FALSE;
-			}
-
+			/* Always reconcile. A transient count==0 must NOT mass-delete hosts:
+			  * the Host(-) loop keeps any client whose switch port link is still up
+			  * and only disconnects clients whose link is really down. */
 			if( bProcessFurther )
 			{
 				CcspTraceDebug(("<EthMonThrd> - Host(+) Loop Start\n") );
-
-				// Reset isDeleteAllDone variable to proceed further from next iteration
-				isDeleteAllDone = FALSE;
 
 				for( iLoopCount = 0; iLoopCount < (int)ulTotalEthDeviceCount; iLoopCount++ )
 				{ 
@@ -489,8 +505,8 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 						mode = 0;
 					}
 
-					/* Validate client in non-extender mode only*/
-					if (mode != 1)
+					/* Validate inactive clients in non-extender mode only. */
+					if ((mode != 1) && (0 == pstRecvEthDevice[ iLoopCount ].eth_Active))
 					{
 						// If valid then it will return 1
 						// If invalid then it will return 0
@@ -527,14 +543,48 @@ void* CcspHalExtSw_AssociatedDeviceMonitorThread( void *arg )
 				//Disconnection Case
 				for( iLoopCount = 0; iLoopCount< ETH_NODE_HASH_SIZE; iLoopCount++ ) 
 				{
+					eth_node_t *pstNode = (eth_node_t *)eth_device_hashArrayList[ iLoopCount ];
+
+					if( NULL == pstNode )
+					{
+						continue;
+					}
+
 					// If found then it will give host address 
 					// If not found then it will give NULL value
-					if ( ( NULL != eth_device_hashArrayList[ iLoopCount ] ) &&\
-						 ( NULL == CcspHalExtSw_FindHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayTempList, NULL ) )
-						)
+					if ( NULL != CcspHalExtSw_FindHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayTempList, NULL ) )
 					{
-						//Delete and Need to send notification	 
-						CcspTraceDebug(("%s:%d Delete and need to send notification\n", __FUNCTION__, __LINE__));
+						pstNode->misses = 0;
+						continue;
+					}
+
+					char miss_mac_id[ 18 ] = {0};
+					snprintf
+					(
+						miss_mac_id,
+						sizeof( miss_mac_id ),
+						"%02X:%02X:%02X:%02X:%02X:%02X",
+						pstNode->dev.eth_devMacAddress[0], pstNode->dev.eth_devMacAddress[1],
+						pstNode->dev.eth_devMacAddress[2], pstNode->dev.eth_devMacAddress[3],
+						pstNode->dev.eth_devMacAddress[4], pstNode->dev.eth_devMacAddress[5]
+					);
+
+					/* A real departure is authoritatively signalled by the switch
+					  * port link going down. Keep the host while its port link is up
+					  * or ARP still resolves it; only a link-down + ARP-invalid host
+					  * that stays missing past the debounce is truly disconnected. */
+					if ( isEthClientPortLinkUp( pstNode->dev.eth_port ) || ValidateClient( miss_mac_id ) )
+					{
+						pstNode->misses = 0;
+					}
+					else if ( ++pstNode->misses < ETH_HOST_MISS_THRESHOLD )
+					{
+						CcspTraceInfo(("<EthMonThrd> - host %s missing (%u/%d), link down - deferring DeleteHost\n",
+							miss_mac_id, pstNode->misses, ETH_HOST_MISS_THRESHOLD));
+					}
+					else
+					{
+						CcspTraceInfo(("<EthMonThrd> - host %s gone (link down, ARP invalid) - DeleteHost\n", miss_mac_id));
 						CcspHalExtSw_DeleteHost( eth_device_hashArrayList[ iLoopCount ], eth_device_hashArrayList, TRUE );
 					}
 				}
