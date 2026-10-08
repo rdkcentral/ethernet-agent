@@ -63,15 +63,19 @@ int ValidateClient(char *mac)
 	FILE *fp1 = NULL;
         errno_t rc = -1;
 		//Need to ignore brlan1 - XHS clients when during CB case
-        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -i REACHABLE > " ARP_CACHE, mac);
+        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -Ei 'REACHABLE|STALE|DELAY|PROBE' > " ARP_CACHE, mac);
+		CcspTraceInfo(("%s: No valid neighbor entry found for %s\n", __FUNCTION__, mac));
 	if ( (fp1 = fopen(ARP_CACHE, "r")) == NULL )
 	{
+		    CcspTraceInfo(("%s: Unable to open %s\n",
+            __FUNCTION__, ARP_CACHE));
         	return ret;
 	}
 	rc  =  memset_s(buf,sizeof(buf),0,sizeof(buf));
         ERR_CHK(rc);
 	if(fgets(buf, sizeof(buf), fp1)!= NULL)
 	{
+		    CcspTraceInfo(("%s: Neighbor entry = %s\n", __FUNCTION__, buf));
 
 			ret = 1;
             		fclose(fp1);
