@@ -31,7 +31,8 @@
 #define DNSMASQ_CACHE "/tmp/dns.txt"
 #define DNSMASQ_FILE "/nvram/dnsmasq.leases"
 #endif /*_SR213_PRODUCT_REQ_*/
-#define ETH_POLLING_PERIOD 180
+/* sole source of a wired host's Active flag; LMLite syncs every 30 s */
+#define ETH_POLLING_PERIOD 30
 #define ETH_NODE_HASH_SIZE 256
 
 CcspHalExtSw_ethAssociatedDevice_callback AssociatedDevice_callback = NULL;
