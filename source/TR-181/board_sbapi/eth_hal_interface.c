@@ -63,7 +63,7 @@ int ValidateClient(char *mac)
 	FILE *fp1 = NULL;
         errno_t rc = -1;
 		//Need to ignore brlan1 - XHS clients when during CB case
-        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -i REACHABLE > " ARP_CACHE, mac);
+        v_secure_system("ip nei show | grep -v brlan1 | grep -i %s | grep -Ei 'REACHABLE|STALE|DELAY|PROBE' > " ARP_CACHE, mac);
 	if ( (fp1 = fopen(ARP_CACHE, "r")) == NULL )
 	{
         	return ret;
@@ -72,7 +72,6 @@ int ValidateClient(char *mac)
         ERR_CHK(rc);
 	if(fgets(buf, sizeof(buf), fp1)!= NULL)
 	{
-
 			ret = 1;
             		fclose(fp1);
             		unlink(ARP_CACHE);
