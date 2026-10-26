@@ -5529,6 +5529,19 @@ static ANSC_STATUS  GetWan_InterfaceName (char* wanoe_ifacename, int length) {
 void EthWanLinkUp_callback() {
     char wanoe_ifname[WANOE_IFACENAME_LENGTH] = {0};
 
+    /* TEST ONLY: simulate late EthWAN link-up. Remove after validation. */
+    {
+        static int linkUpDelayDone = 0;
+        const int delaySec = 300;
+        if (!linkUpDelayDone)
+        {
+            linkUpDelayDone = 1;
+            CcspTraceInfo(("[%s][%d] TEST: delaying EthWAN link-up by %d sec\n", __FUNCTION__, __LINE__, delaySec));
+            sleep(delaySec);
+            CcspTraceInfo(("[%s][%d] TEST: delay over, continuing EthWAN link-up\n", __FUNCTION__, __LINE__));
+        }
+    }
+
 #ifdef AUTOWAN_ENABLE
         char redirFlag[10]={0};
         char captivePortalEnable[10]={0};
