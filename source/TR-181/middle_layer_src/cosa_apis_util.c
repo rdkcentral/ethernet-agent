@@ -451,7 +451,8 @@ CosaUtilGetLowerLayers
                 {
                   parameterValStruct_t varStruct;
                   ulNumOfEntries = 0;
-                  rc = strcpy_s(ucEntryParamName,sizeof(ucEntryParamName),"Device.WiFi.SSIDNumberOfEntries");
+                  snprintf(ucEntryParamName,sizeof(ucEntryParamName),"%s","Device.WiFi.SSIDNumberOfEntries");
+                  rc = EOK;
                   if(rc != EOK)
                   {
                     ERR_CHK(rc);
@@ -1127,7 +1128,7 @@ ULONG CosaUtilIoctlXXX(char * if_name, char * method, void * input)
         return 0;
     }
 
-    rc = strncpy_s(ifr.ifr_name,sizeof(ifr.ifr_name), if_name, IF_NAMESIZE);
+    rc = strncpy_s(ifr.ifr_name,sizeof(ifr.ifr_name), if_name, IF_NAMESIZE-1);
     if(rc != EOK)
     {
         ERR_CHK(rc);
