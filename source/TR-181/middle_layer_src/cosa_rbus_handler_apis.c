@@ -307,10 +307,13 @@ BOOL Rbus_EthAgent_SetParamUintValue(void* hInsContext, char* pParamName, uint u
 		if (ethAgent_Link_Status.EWanLinkDownTimeout != uValue)
 		{
 			ethAgent_Link_Status.EWanLinkDownTimeout = uValue;
-			syscfg_set_u_commit(NULL, ETHWAN_LINK_DOWN_TIMEOUT, ethAgent_Link_Status.EWanLinkDownTimeout);
-			CcspTraceInfo(("%s : parameter name ='%s', value = '%d'\n",
-					__FUNCTION__, pParamName, ethAgent_Link_Status.EWanLinkDownTimeout));
-			return TRUE;
+			if (syscfg_set_u_commit(NULL, ETHWAN_LINK_DOWN_TIMEOUT, ethAgent_Link_Status.EWanLinkDownTimeout) != 0)
+			{
+					CcspTraceWarning(("%s : syscfg_set_u_commit failed for parameter '%s'\n", __FUNCTION__, pParamName));
+			}
+		CcspTraceInfo(("%s : parameter name ='%s', value = '%d'\n",
+		__FUNCTION__, pParamName, ethAgent_Link_Status.EWanLinkDownTimeout));
+		return TRUE;
 		}
 		else
 		{
