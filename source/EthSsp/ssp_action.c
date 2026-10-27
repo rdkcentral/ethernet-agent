@@ -136,7 +136,7 @@ ssp_create
         }
         else
         {
-            rc = strcpy_s(pDslhLcbIf->Name,sizeof(pDslhLcbIf->Name), CCSP_LIBCBK_INTERFACE_NAME);
+            rc = strcpy_s(pDslhLcbIf->Name, sizeof(pDslhLcbIf->Name), (const char *)CCSP_LIBCBK_INTERFACE_NAME);
              if(rc != EOK)
             {
              ERR_CHK(rc);
