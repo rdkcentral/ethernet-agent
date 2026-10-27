@@ -1085,7 +1085,8 @@ EthLogging_SetParamBoolValue
     {
         if(bValue)
         {
-            rc = strcpy_s(buf,sizeof(buf),"true");
+                const char *val = "true";
+                rc = strcpy_s(buf,sizeof(buf),val);
             if(rc != EOK)
            {
               ERR_CHK(rc);
