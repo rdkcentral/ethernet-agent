@@ -125,6 +125,8 @@ rbusError_t setBoolHandler(rbusHandle_t handle, rbusProperty_t property, rbusSet
 		else
 		{
 			CcspTraceWarning(("%s result:FAIL error:'unexpected type %d'\n", __FUNCTION__, rbusValue_GetType(value)));
+			free(param);
+			return RBUS_ERROR_INVALID_PARAMETER_TYPE;
 		}
 	}
 	else
@@ -208,6 +210,8 @@ rbusError_t setuintHandler(rbusHandle_t handle, rbusProperty_t property, rbusSet
 		else
 		{
 			CcspTraceWarning(("%s result:FAIL error:'unexpected type %d'\n", __FUNCTION__, rbusValue_GetType(value)));
+			free(param);
+			return RBUS_ERROR_INVALID_PARAMETER_TYPE;
 		}
         }
 	else
