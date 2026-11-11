@@ -75,6 +75,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <limits.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -1127,13 +1128,12 @@ ULONG CosaUtilIoctlXXX(char * if_name, char * method, void * input)
         return 0;
     }
 
-    rc = strncpy_s(ifr.ifr_name,sizeof(ifr.ifr_name), if_name, IF_NAMESIZE);
+    rc = strcpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), if_name);
     if(rc != EOK)
     {
         ERR_CHK(rc);
         close(sock);
-	return -1;
-        
+	return ULONG_MAX;
     }
 
     rc = strcmp_s( "mtu",strlen("mtu"),method,&ind);
@@ -1158,7 +1158,7 @@ ULONG CosaUtilIoctlXXX(char * if_name, char * method, void * input)
         ULONG mtu = *(ULONG *)input;
         ifr.ifr_mtu = mtu;
 
-        ret = ioctl(sock, SIOCSIFMTU, &ifr);
+	ret = (ioctl(sock, SIOCSIFMTU, &ifr) < 0) ? ULONG_MAX : 0;
         goto _EXIT;
     }
     else
@@ -1191,7 +1191,7 @@ ULONG CosaUtilIoctlXXX(char * if_name, char * method, void * input)
             {
               ERR_CHK(rc);
               close(sock);
-              return -1;
+	      return ULONG_MAX;
              }
 
 
@@ -1220,15 +1220,15 @@ ULONG CosaUtilIoctlXXX(char * if_name, char * method, void * input)
                   {
                     ERR_CHK(rc);
                     close(sock);
-                    return -1;
+		    return ULONG_MAX;
                   }
 
-                 ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
+		 ret = (ioctl(sock, SIOCSIFNETMASK, &ifr) < 0) ? ULONG_MAX : 0; 
                  goto _EXIT;
                  }
                  else 
                  {
-                   ret = -1;
+                   ret = ULONG_MAX;
                    goto _EXIT;
                   }        
                 }

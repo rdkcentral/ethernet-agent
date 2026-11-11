@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <pthread.h>
 #include "ccsp_trace.h"
 #include "cosa_rbus_handler_apis.h"
 #include "syscfg/syscfg.h"
@@ -29,6 +30,7 @@ rbusHandle_t handle;
 #endif
 
 #if defined (WAN_FAILOVER_SUPPORTED)
+extern pthread_mutex_t Linkdownlock;
 EthAgent_Link_Status ethAgent_Link_Status;
 
 unsigned int gSubscribersCount = 0;
@@ -267,6 +269,7 @@ BOOL Rbus_EthAgent_SetParamBoolValue(void* hInsContext, char* pParamName, BOOL b
 	CcspTraceInfo(("%s pParamName = %s, bValue = %d\n", __FUNCTION__, pParamName, bValue));
 	if (strcmp(pParamName, "LinkDown") == 0)
 	{
+		pthread_mutex_lock(&Linkdownlock);
 		if (ethAgent_Link_Status.EWanLinkDown!=bValue)
 		{
 			ethAgent_Link_Status.EWanLinkDown = bValue;
@@ -280,12 +283,14 @@ BOOL Rbus_EthAgent_SetParamBoolValue(void* hInsContext, char* pParamName, BOOL b
 			}
 			CcspTraceInfo(("%s : parameter name = '%s', value = '%d'\n", __FUNCTION__,
 					pParamName, ethAgent_Link_Status.EWanLinkDown));
+			pthread_mutex_unlock(&Linkdownlock);
 			return TRUE;
 		}
 		else
 		{
 			CcspTraceInfo(("%s : trying to set same value for parameter '%s', value is '%d'\n",
 					__FUNCTION__, pParamName, ethAgent_Link_Status.EWanLinkDown));
+			 pthread_mutex_unlock(&Linkdownlock);
 			return FALSE;
 		}
 	}
@@ -307,7 +312,10 @@ BOOL Rbus_EthAgent_SetParamUintValue(void* hInsContext, char* pParamName, uint u
 		if (ethAgent_Link_Status.EWanLinkDownTimeout != uValue)
 		{
 			ethAgent_Link_Status.EWanLinkDownTimeout = uValue;
-			syscfg_set_u_commit(NULL, ETHWAN_LINK_DOWN_TIMEOUT, ethAgent_Link_Status.EWanLinkDownTimeout);
+			if (syscfg_set_u_commit(NULL, ETHWAN_LINK_DOWN_TIMEOUT, ethAgent_Link_Status.EWanLinkDownTimeout) != 0)
+			{
+	                    CcspTraceWarning(("%s : syscfg_set_u_commit failed for parameter '%s'\n", __FUNCTION__, pParamName));
+			}
 			CcspTraceInfo(("%s : parameter name ='%s', value = '%d'\n",
 					__FUNCTION__, pParamName, ethAgent_Link_Status.EWanLinkDownTimeout));
 			return TRUE;

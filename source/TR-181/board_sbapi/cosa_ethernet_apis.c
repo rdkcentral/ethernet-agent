@@ -2185,7 +2185,10 @@ INT InitBootInformInfo(WAN_BOOTINFORM_MSG *pMsg)
     memset(out_value,0,sizeof(out_value));
     memset(wanName,0,sizeof(wanName));
     memset(ethWanName,0,sizeof(ethWanName));
-    syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value));
+    if (syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)) != 0)
+    {
+	CcspTraceError(("%s: syscfg_get failed to retrieve wan_physical_ifname \n", __FUNCTION__));
+    }	
 
     if(0 != strnlen(out_value,sizeof(out_value)))
     {
@@ -2624,7 +2627,10 @@ ANSC_STATUS CosaDmlConfigureEthWan(BOOL bEnable)
         lastKnownWanMode = atoi(buf);
     }
 
-    syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value));
+    if (syscfg_get(NULL, "wan_physical_ifname", out_value, sizeof(out_value)) != 0)
+    {
+	CcspTraceError(("%s: syscfg_get failed to retrieve wan_physical_ifname\n", __FUNCTION__)); 
+    }
 
 
     if(0 != strnlen(out_value,sizeof(out_value)))
@@ -5944,7 +5950,7 @@ void* Wan_Failover_Simulation(void *arg)
 	pthread_cond_init(&LinkdownCond, &LinkdownAttr);
 	pthread_mutex_lock(&Linkdownlock);
 	set_time(ethAgent_Link_Status.EWanLinkDownTimeout);
-	int rv;
+	int rv = 0;
 
 	if (ethAgent_Link_Status.EWanLinkDown == true)
 	{
@@ -5954,13 +5960,23 @@ void* Wan_Failover_Simulation(void *arg)
 
 	if (ethAgent_Link_Status.EWanLinkDownTimeout == 0)
 	{
-		// conditional wait
-		pthread_cond_wait(&LinkdownCond, &Linkdownlock);
+		while (ethAgent_Link_Status.EWanLinkDown && rv == 0)
+                {
+			// conditional wait
+                        rv = pthread_cond_wait(&LinkdownCond, &Linkdownlock);
+                }
+                if (rv != 0)
+                {
+                        CcspTraceError(("%s pthread_cond_wait(): error:%d\n", __FUNCTION__, rv));
+                }
 	}
 	else
 	{
-		// Sleep based on TR181 Device.X_RDKCENTRAL-COM_EthernetWAN.LinkDownTimeout
-		rv = pthread_cond_timedwait(&LinkdownCond, &Linkdownlock, &ts);
+		while (ethAgent_Link_Status.EWanLinkDown && rv == 0)
+                {
+			// Sleep based on TR181 Device.X_RDKCENTRAL-COM_EthernetWAN.LinkDownTimeout
+                        rv = pthread_cond_timedwait(&LinkdownCond, &Linkdownlock, &ts);
+                }
 		if (rv == ETIMEDOUT) {
 			CcspTraceInfo(("%s pthread_cond_timedwait(): timeout occurred\n", __FUNCTION__));
 		}

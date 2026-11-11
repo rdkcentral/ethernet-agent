@@ -514,7 +514,8 @@ EthernetWAN_GetParamStringValue
 			}
 			else if (wan_mode == WAN_MODE_ETH)
 			{
-				rc = strcpy_s(pValue,*pUlSize, "Ethernet");
+				const char *modeValue = "Ethernet";
+				rc = strcpy_s(pValue,*pUlSize, modeValue);
                                 if(rc != EOK)
                                 {
                                    ERR_CHK(rc);
@@ -1076,6 +1077,7 @@ EthLogging_SetParamBoolValue
 {
     UNREFERENCED_PARAMETER(hInsContext);
     char buf[8]={0};
+    const char *val = NULL;
     PCOSA_DATAMODEL_ETHERNET pMyObject = (PCOSA_DATAMODEL_ETHERNET)g_EthObject;
     errno_t rc = -1;
     int            ind = -1;
@@ -1083,24 +1085,14 @@ EthLogging_SetParamBoolValue
     ERR_CHK(rc);
     if( (ind == 0) && (rc == EOK))
     {
-        if(bValue)
+	val = bValue ? "true" : "false";
+
+        rc = strcpy_s(buf, sizeof(buf), val);
+        if (rc != EOK)
         {
-            rc = strcpy_s(buf,sizeof(buf),"true");
-            if(rc != EOK)
-           {
-              ERR_CHK(rc);
-              return FALSE;
-           }
-     }
-     else
-     {
-             rc =  strcpy_s(buf,sizeof(buf),"false");
-             if(rc != EOK)
-             {
-                ERR_CHK(rc);
-                return FALSE;
-             }
-     }
+            ERR_CHK(rc);
+            return FALSE;
+        }
 
         if (syscfg_set_commit(NULL, "eth_log_enabled", buf) != 0)
         {
